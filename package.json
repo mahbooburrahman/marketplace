@@ -1,0 +1,28 @@
+{
+  "name": "classified-marketplace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Moderated classified listings marketplace \u2014 React + Node/Express + PostgreSQL",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,yellow \"npm run dev -w server\" \"npm run dev -w client\"",
+    "db:up": "docker compose up -d db",
+    "migrate": "npm run migrate -w server",
+    "seed": "npm run seed -w server",
+    "setup": "npm run migrate && npm run seed",
+    "build": "npm run build -w client && npm run build -w server",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
+    "test:workflows": "npm run test:workflows -w server",
+    "dev:local": "concurrently -k -n db,api,web -c magenta,cyan,yellow \"npm run db -w server\" \"npm run dev -w server\" \"npm run dev -w client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -1,0 +1,110 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, BadgeCheck, ShieldCheck, MessageCircle, Sparkles, Clock, Eye } from 'lucide-react';
+import { api } from '../lib/api';
+import { useFetch, usePageMeta } from '../lib/hooks';
+import { recentlyViewed } from '../lib/format';
+import type { ListingCard as L } from '../lib/types';
+import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
+import { ListingRail, ProductRow } from '../components/ListingCard';
+import { Avatar, EmptyState, ErrorState, GridSkeleton } from '../components/ui';
+import { HeroSlider, HotCard, CategoryCircles } from '../components/HeroSlider';
+
+interface HomeData {
+  featured: L[];
+  recent: L[];
+  recommended: L[];
+  popular_categories: { id: string; name: string; slug: string; icon: string; listing_count: number; image_url: string | null }[];
+  seller_highlights: { id: string; name: string; avatar_url: string | null; location: string | null; active_listings: number; created_at: string }[];
+}
+
+function Section({ title, icon: I, to, children }: { title: string; icon?: React.ComponentType<{ size?: number | string; className?: string }>; to?: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-10">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-extrabold flex items-center gap-2">{I && <I size={20} className="text-brand" />}{title}</h2>
+        {to && <Link to={to} className="text-sm font-semibold text-brand hover:underline flex items-center gap-1">See all <ArrowRight size={14} /></Link>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export default function Home() {
+  const { settings, categories } = useSettings();
+  const { user } = useAuth();
+  usePageMeta(undefined, settings?.site.tagline);
+  const { data, error, loading, reload } = useFetch<HomeData>('/api/listings/home');
+  const [recent, setRecent] = useState<L[]>([]);
+
+  useEffect(() => {
+    const ids = recentlyViewed.get();
+    if (ids.length) api.get<{ items: L[] }>(`/api/listings/by-ids?ids=${ids.join(',')}`).then((r) => setRecent(r.items)).catch(() => {});
+  }, []);
+
+  const featuredSlides = data?.featured.slice(0, 4) ?? [];
+  const hot = data ? ([...data.recommended, ...data.recent].find((x) => !featuredSlides.some((f) => f.id === x.id)) ?? data.recommended[0] ?? data.recent[0]) : undefined;
+  const sellTo = user ? '/dashboard/seller' : '/register';
+
+  return (
+    <div>
+      <div className="container-page">
+        <h1 className="sr-only">{settings?.site.tagline ?? 'Buy and sell locally, safely.'}</h1>
+
+        {/* Slider + hot item */}
+        <section aria-label="Highlights" className="mt-4 sm:mt-6 grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2 min-w-0"><HeroSlider listings={featuredSlides} sellTo={sellTo} /></div>
+          <HotCard item={hot} loading={loading} sellTo={sellTo} />
+        </section>
+
+        <CategoryCircles categories={categories} />
+
+        {loading && <div className="mt-10"><GridSkeleton n={8} /></div>}
+        {!!error && <ErrorState error={error} retry={reload} />}
+
+        {data && (
+          <>
+            <ProductRow title="Featured picks" to="/search?featured=1" items={data.featured} />
+
+            {data.recent.length ? <ProductRow title="Just listed near you" to="/search?sort=newest" items={data.recent} /> : (
+              <Section title="Recently added" icon={Clock}><div className="card"><EmptyState title="No listings yet" body="Listings appear here as soon as our team approves them." /></div></Section>
+            )}
+
+            <ProductRow title={user ? 'Recommended for you' : 'Popular right now'} items={data.recommended} />
+
+            {recent.length > 0 && <Section title="Recently viewed" icon={Eye}><ListingRail items={recent} /></Section>}
+
+            {data.seller_highlights.length > 0 && (
+              <Section title="Top sellers" icon={BadgeCheck}>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 lg:grid-cols-6">
+                  {data.seller_highlights.map((s) => (
+                    <Link key={s.id} to={`/seller/${s.id}`} className="card p-4 w-40 sm:w-auto shrink-0 flex flex-col items-center text-center hover:border-brand/40 transition">
+                      <Avatar name={s.name} src={s.avatar_url} size={56} />
+                      <p className="mt-2 font-semibold text-sm truncate max-w-full flex items-center gap-1">{s.name} <BadgeCheck size={14} className="text-brand shrink-0" /></p>
+                      <p className="text-xs text-muted">{s.active_listings} active · {s.location ?? '—'}</p>
+                    </Link>
+                  ))}
+                </div>
+              </Section>
+            )}
+          </>
+        )}
+
+        {/* Trust strip */}
+        <section className="mt-14 grid sm:grid-cols-3 gap-3">
+          {[
+            [ShieldCheck, 'Moderated listings', 'Nothing goes live until an administrator approves it.'],
+            [BadgeCheck, 'Authorized sellers', 'Only verified, approved sellers can post.'],
+            [MessageCircle, 'Private messaging', 'Chat safely inside the platform — no need to share your number.'],
+          ].map(([I, t, b]: any) => (
+            <div key={t} className="card p-5 flex gap-3">
+              <I size={22} className="text-brand shrink-0" />
+              <div><p className="font-bold">{t}</p><p className="text-sm text-muted mt-0.5">{b}</p></div>
+            </div>
+          ))}
+        </section>
+      </div>
+    </div>
+  );
+}
