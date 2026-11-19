@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, SearchX } from 'lucide-react';
 import { qs } from '../lib/api';
 import { useFetch, usePageMeta } from '../lib/hooks';
-import { CONDITIONS } from '../lib/format';
 import type { ListingCard as L, Paged } from '../lib/types';
 import { useSettings } from '../context/SettingsContext';
+import { useCity } from '../lib/geo';
 import { ListingGrid } from '../components/ListingCard';
-import { Button, EmptyState, ErrorState, GridSkeleton, Input, Pagination, Select } from '../components/ui';
+import { Button, EmptyState, ErrorState, GridSkeleton, Pagination, Select } from '../components/ui';
 
 const SORTS = [
   ['relevance', 'Most relevant'],
@@ -27,19 +27,17 @@ export default function Search() {
   const q = params.get('q') ?? '';
   usePageMeta(cat ? `${cat.name} for sale` : q ? `“${q}”` : 'Browse listings', cat ? `Browse ${cat.name.toLowerCase()} for sale.` : undefined);
 
+  const { near } = useCity(settings?.site.locations);
   const filters = {
     q,
     category,
     subcategory: params.get('subcategory') ?? '',
-    min_price: params.get('min_price') ?? '',
-    max_price: params.get('max_price') ?? '',
     location: params.get('location') ?? '',
-    condition: params.getAll('condition'),
     sort: params.get('sort') ?? (q ? 'relevance' : 'newest'),
     featured: params.get('featured') ?? '',
     page: params.get('page') ?? '1',
   };
-  const url = `/api/listings${qs({ ...filters, limit: 24 })}`;
+  const url = `/api/listings${qs({ ...filters, near: filters.location ? '' : near, limit: 24 })}`;
   const { data, error, loading, reload } = useFetch<Paged<L>>(url);
 
   const set = (patch: Record<string, string | string[] | null>) => {
@@ -53,13 +51,8 @@ export default function Search() {
     setParams(sp, { replace: false });
   };
 
-  // Local price inputs so typing doesn't refetch on every keystroke.
-  const [minP, setMinP] = useState(filters.min_price);
-  const [maxP, setMaxP] = useState(filters.max_price);
-  useEffect(() => { setMinP(filters.min_price); setMaxP(filters.max_price); }, [filters.min_price, filters.max_price]);
-
   const activeCount = useMemo(
-    () => [filters.subcategory, filters.min_price, filters.max_price, filters.location, filters.featured].filter(Boolean).length + filters.condition.length + (slug ? 0 : filters.category ? 1 : 0),
+    () => [filters.subcategory, filters.location, filters.featured].filter(Boolean).length + (slug ? 0 : filters.category ? 1 : 0),
     [filters, slug],
   );
 
@@ -86,32 +79,11 @@ export default function Search() {
         </div>
       )}
       <div>
-        <p className="label">Price ({settings?.site.default_currency ?? 'CAD'})</p>
-        <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); set({ min_price: minP, max_price: maxP }); }}>
-          <Input inputMode="numeric" placeholder="Min" value={minP} onChange={(e) => setMinP(e.target.value.replace(/[^0-9]/g, ''))} aria-label="Minimum price" />
-          <span className="text-muted">–</span>
-          <Input inputMode="numeric" placeholder="Max" value={maxP} onChange={(e) => setMaxP(e.target.value.replace(/[^0-9]/g, ''))} aria-label="Maximum price" />
-          <Button type="submit" variant="outline" size="sm" className="h-11">Go</Button>
-        </form>
-      </div>
-      <div>
         <p className="label">Location</p>
         <Select value={filters.location} onChange={(e) => set({ location: e.target.value })}>
           <option value="">All locations</option>
           {settings?.site.locations.map((l) => <option key={l} value={l}>{l}</option>)}
         </Select>
-      </div>
-      <div>
-        <p className="label">Condition</p>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(CONDITIONS).map(([k, v]) => {
-            const on = filters.condition.includes(k);
-            return (
-              <button key={k} aria-pressed={on} className={`chip ${on ? 'chip-active' : ''}`}
-                onClick={() => set({ condition: on ? filters.condition.filter((x) => x !== k) : [...filters.condition, k] })}>{v}</button>
-            );
-          })}
-        </div>
       </div>
       {activeCount > 0 && (
         <Button variant="ghost" size="sm" onClick={() => setParams(new URLSearchParams(q ? { q } : {}))}><X size={14} /> Clear filters</Button>

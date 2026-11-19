@@ -136,8 +136,8 @@ export function Register() {
           <p className="mt-2 text-sm text-muted">We sent it to <b>{f.email}</b>. The link expires in 24 hours.</p>
           <ol className="mt-5 text-left text-sm space-y-2 bg-brand-soft rounded-xl p-4">
             <li><b>1.</b> Verify your email</li>
-            <li><b>2.</b> An administrator reviews your account</li>
-            <li><b>3.</b> Once approved, you can message sellers</li>
+            <li><b>2.</b> Log in — your account is active straight away</li>
+            <li><b>3.</b> Message sellers. (Want to sell? Request seller approval later.)</li>
           </ol>
           <Link to="/resend-verification" className="btn btn-outline w-full mt-5">Didn't get it? Resend</Link>
         </div>
@@ -193,7 +193,7 @@ export function VerifyEmail() {
           <>
             <CheckCircle2 size={44} className="mx-auto text-emerald-600" />
             <p className="mt-3 font-semibold">{state.msg}</p>
-            <p className="mt-1 text-sm text-muted">We'll email you as soon as your account is approved.</p>
+            <p className="mt-1 text-sm text-muted">You can now save listings and message sellers.</p>
             <Link to="/dashboard/status" className="btn btn-primary w-full mt-5">Go to my account</Link>
           </>
         ) : (

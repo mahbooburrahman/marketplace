@@ -81,11 +81,11 @@ export function AccountStatusNotice() {
   switch (user.status) {
     case 'email_unverified':
       return <Notice icon={Mail} title="Please verify your email address" action={<Button size="sm" variant="outline" loading={sending} onClick={resend}>Resend verification email</Button>}>
-        We sent a verification link to <b>{user.email}</b>. After verifying, an administrator will review your account.</Notice>;
+        We sent a verification link to <b>{user.email}</b>. Once you verify, your account is active and you can message sellers.</Notice>;
     case 'pending_approval':
       return <Notice icon={Clock} title="Your account is currently awaiting administrator approval.">You can browse and save listings now. Messaging sellers unlocks once an administrator approves your account — we'll email you.</Notice>;
     case 'approved':
-      return <Notice tone="green" icon={CheckCircle2} title="Your account has been approved for buyer communication.">You can contact sellers on any live listing.</Notice>;
+      return <Notice tone="green" icon={CheckCircle2} title="Your account is active.">You can contact sellers on any live listing. To sell your own items, request seller approval from the Seller page.</Notice>;
     case 'rejected':
       return <Notice tone="red" icon={AlertTriangle} title="Your account was not approved for messaging">Contact support if you believe this is a mistake.</Notice>;
     case 'suspended':

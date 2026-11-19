@@ -5,7 +5,7 @@ import { config } from '../config.js';
 import { ah, bad, parse, HttpError } from '../lib/http.js';
 import { hashPassword, newToken, passwordProblem, sha256, verifyPassword } from '../lib/security.js';
 import { sendMail } from '../lib/mailer.js';
-import { notify, notifyAdmins } from '../lib/notify.js';
+import { notify } from '../lib/notify.js';
 import { audit } from '../lib/audit.js';
 import { clearSession, createSession, requireAuth } from '../middleware/auth.js';
 import { authLimiter, emailLimiter, registerLimiter, verifyCaptcha } from '../middleware/limits.js';
@@ -44,7 +44,7 @@ async function sendVerification(userId: string, to: string, name: string) {
     lines: [
       'Thanks for registering. Please confirm your email address to continue.',
       `This link expires in ${VERIFY_TTL_H} hours.`,
-      'After you verify, an administrator will review your account before messaging is enabled.',
+      'Once you verify, you can message sellers right away.',
     ],
     cta: { label: 'Verify email', url: `${config.appUrl}/verify-email?token=${token}` },
   });
@@ -138,7 +138,8 @@ r.post(
       await q('UPDATE email_tokens SET used_at=now() WHERE id=$1', [row.id], c);
       await q(
         `UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()),
-                status = CASE WHEN status='email_unverified' THEN 'pending_approval'::user_status ELSE status END,
+                status = CASE WHEN status='email_unverified' THEN 'approved'::user_status ELSE status END,
+                approved_at = CASE WHEN status='email_unverified' THEN now() ELSE approved_at END,
                 updated_at = now()
           WHERE id=$1`,
         [row.user_id], c,
@@ -146,16 +147,15 @@ r.post(
     });
     await audit(req, 'user.email_verified', { type: 'user', id: row.user_id });
     if (row.status === 'email_unverified') {
-      await notifyAdmins('user.pending', 'New account awaiting approval', `${row.full_name} (${row.email}) verified their email.`, `/admin/users?status=pending_approval`);
       await notify({
         userId: row.user_id,
-        type: 'account.pending',
+        type: 'account.verified',
         title: 'Email verified',
-        body: 'Your account is currently awaiting administrator approval.',
-        link: '/dashboard/status',
+        body: 'Your account is active. You can now message sellers.',
+        link: '/dashboard',
       });
     }
-    res.json({ message: 'Email verified. Your account is now awaiting administrator approval.' });
+    res.json({ message: 'Email verified. Your account is active, so you can now log in and message sellers.' });
   }),
 );
 

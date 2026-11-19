@@ -44,7 +44,7 @@ function ContactBox({ l }: { l: D }) {
     return <Notice title="Verify your email to contact sellers" icon={Lock}>Check your inbox for the verification link, or <Link className="underline font-semibold" to="/dashboard/status">resend it</Link>.</Notice>;
   }
   if (!user.can_chat) {
-    return <Notice title="Messaging not yet enabled" icon={Lock}>Your account is currently awaiting administrator approval. You'll be able to contact sellers once approved.</Notice>;
+    return <Notice title="Messaging not yet enabled" icon={Lock}>Messaging is switched off for your account right now. Please contact support if you think this is a mistake.</Notice>;
   }
   const send = async () => {
     setBusy(true);

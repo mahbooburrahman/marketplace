@@ -18,7 +18,15 @@ const searchSchema = z.object({
   sort: z.enum(['newest', 'price_asc', 'price_desc', 'relevance']).optional(),
   featured: z.enum(['1', 'true']).optional(),
   seller: z.string().uuid().optional(),
+  /** City the visitor is in (e.g. "Mississauga, ON"). Listings from that city are listed first. */
+  near: z.string().trim().max(80).optional(),
 });
+
+/** "Mississauga, ON" -> LIKE pattern "Mississauga%" (city part only). */
+const cityPattern = (near?: string) => {
+  const city = (near ?? '').split(',')[0]!.trim();
+  return city.length >= 2 ? `${likeEscape(city)}%` : null;
+};
 
 /** GET /api/listings — public search with filters, sorting and pagination. */
 r.get(
@@ -50,16 +58,19 @@ r.get(
     if (f.seller) where.push(`l.seller_id = ${p(f.seller)}`);
 
     const sort = f.sort ?? (f.q ? 'relevance' : 'newest');
-    const order = {
-      newest: 'l.published_at DESC',
-      price_asc: 'l.price ASC, l.published_at DESC',
-      price_desc: 'l.price DESC, l.published_at DESC',
-      relevance: `${rank} DESC, l.is_featured DESC, l.published_at DESC`,
-    }[sort];
+    // Visitor's city first (not for price sorts, and not when a location filter is already chosen).
+    const nearPat = !f.location && (sort === 'newest' || sort === 'relevance') ? cityPattern(f.near) : null;
 
     const whereSql = where.join(' AND ');
     const [{ total }] = await q<{ total: number }>(`SELECT count(*)::int AS total ${CARD_FROM} WHERE ${whereSql}`, params);
-    // The viewer id is only used by the card columns, so it is added after the count query.
+    // These params are only used by the page query, so they are added after the count query.
+    const nearSql = nearPat ? `(l.location ILIKE ${p(nearPat)}) DESC, ` : '';
+    const order = {
+      newest: `${nearSql}l.published_at DESC`,
+      price_asc: 'l.price ASC, l.published_at DESC',
+      price_desc: 'l.price DESC, l.published_at DESC',
+      relevance: `${nearSql}${rank} DESC, l.is_featured DESC, l.published_at DESC`,
+    }[sort];
     const viewer = req.user ? p(req.user.id) : null;
     const rows = await q(
       `SELECT ${CARD_SELECT(viewer)} ${CARD_FROM} WHERE ${whereSql} ORDER BY ${order} LIMIT ${p(limit)} OFFSET ${p(offset)}`,
@@ -76,13 +87,17 @@ r.get(
   ah(async (req, res) => {
     const viewer = req.user?.id ?? null;
     const vp = viewer ? '$1' : null;
-    const base = viewer ? [viewer] : [];
+    const base: unknown[] = viewer ? [viewer] : [];
     const card = CARD_SELECT(vp);
+    // Visitor's city first on every strip.
+    const nearPat = cityPattern(typeof req.query.near === 'string' ? req.query.near.slice(0, 80) : undefined);
+    if (nearPat) base.push(nearPat);
+    const nearFirst = nearPat ? `(l.location ILIKE $${base.length}) DESC, ` : '';
 
     const [featured, recent, popularCats, sellers] = await Promise.all([
       q(`SELECT ${card} ${CARD_FROM} WHERE ${PUBLIC_WHERE} AND l.is_featured AND (l.featured_until IS NULL OR l.featured_until > now())
-         ORDER BY l.published_at DESC LIMIT 8`, base),
-      q(`SELECT ${card} ${CARD_FROM} WHERE ${PUBLIC_WHERE} ORDER BY l.published_at DESC LIMIT 12`, base),
+         ORDER BY ${nearFirst}l.published_at DESC LIMIT 8`, base),
+      q(`SELECT ${card} ${CARD_FROM} WHERE ${PUBLIC_WHERE} ORDER BY ${nearFirst}l.published_at DESC LIMIT 12`, base),
       q(`SELECT c.id, c.name, c.slug, c.icon, c.image_path, count(l.id)::int AS listing_count
            FROM categories c
            LEFT JOIN listings l ON l.category_id = c.id AND l.status='published' AND l.deleted_at IS NULL
@@ -105,14 +120,14 @@ r.get(
            AND l.category_id IN (SELECT l2.category_id FROM favorites f JOIN listings l2 ON l2.id=f.listing_id WHERE f.user_id=$1)
            AND NOT EXISTS (SELECT 1 FROM favorites f WHERE f.user_id=$1 AND f.listing_id=l.id)
            AND l.seller_id <> $1
-         ORDER BY l.view_count DESC, l.published_at DESC LIMIT 8`,
+         ORDER BY ${nearFirst}l.view_count DESC, l.published_at DESC LIMIT 8`,
         base,
       );
     }
     if (recommended.length < 4) {
       recommended = await q(
         `SELECT ${card} ${CARD_FROM} WHERE ${PUBLIC_WHERE} AND l.published_at > now() - interval '60 days'
-         ORDER BY l.view_count DESC, l.published_at DESC LIMIT 8`,
+         ORDER BY ${nearFirst}l.view_count DESC, l.published_at DESC LIMIT 8`,
         base,
       );
     }
@@ -123,6 +138,35 @@ r.get(
       recommended: recommended.map(toCard),
       popular_categories: popularCats.map((c: any) => ({ ...c, image_url: publicUrl(c.image_path) })),
       seller_highlights: sellers.map((s: any) => ({ ...s, avatar_url: publicUrl(s.avatar_path), avatar_path: undefined })),
+    });
+  }),
+);
+
+/** GET /api/listings/suggest?q=cur&near=Toronto — live matches for the search box (published listings only). */
+r.get(
+  '/suggest',
+  ah(async (req, res) => {
+    const term = String(req.query.q ?? '').trim().slice(0, 60);
+    if (term.length < 2) return res.json({ items: [] });
+    const nearPat = cityPattern(typeof req.query.near === 'string' ? req.query.near.slice(0, 80) : undefined);
+    const params: unknown[] = [`%${likeEscape(term)}%`, `${likeEscape(term)}%`];
+    if (nearPat) params.push(nearPat);
+    const nearSql = nearPat ? '(l.location ILIKE $3) DESC, ' : '';
+    const rows = await q(
+      `SELECT l.slug, l.title, l.price, l.currency, l.location, c.name AS category_name,
+              (SELECT thumb_path FROM listing_images i WHERE i.listing_id = l.id ORDER BY sort_order, created_at LIMIT 1) AS thumb_path
+         ${CARD_FROM}
+        WHERE ${PUBLIC_WHERE} AND (l.title ILIKE $1 OR c.name ILIKE $1)
+        ORDER BY ${nearSql}(l.title ILIKE $2) DESC, l.is_featured DESC, l.published_at DESC
+        LIMIT 6`,
+      params,
+    );
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      items: rows.map((r: any) => ({
+        slug: r.slug, title: r.title, price: r.price, currency: r.currency, location: r.location,
+        category: r.category_name, image: publicUrl(r.thumb_path),
+      })),
     });
   }),
 );

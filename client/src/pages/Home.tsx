@@ -6,6 +6,7 @@ import { useFetch, usePageMeta } from '../lib/hooks';
 import { recentlyViewed } from '../lib/format';
 import type { ListingCard as L } from '../lib/types';
 import { useSettings } from '../context/SettingsContext';
+import { useCity } from '../lib/geo';
 import { useAuth } from '../context/AuthContext';
 import { ListingRail, ProductRow } from '../components/ListingCard';
 import { Avatar, EmptyState, ErrorState, GridSkeleton } from '../components/ui';
@@ -34,8 +35,9 @@ function Section({ title, icon: I, to, children }: { title: string; icon?: React
 export default function Home() {
   const { settings, categories } = useSettings();
   const { user } = useAuth();
+  const { near } = useCity(settings?.site.locations);
   usePageMeta(undefined, settings?.site.tagline);
-  const { data, error, loading, reload } = useFetch<HomeData>('/api/listings/home');
+  const { data, error, loading, reload } = useFetch<HomeData>(`/api/listings/home${near ? `?near=${encodeURIComponent(near)}` : ''}`);
   const [recent, setRecent] = useState<L[]>([]);
 
   useEffect(() => {

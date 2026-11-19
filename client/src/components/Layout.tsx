@@ -6,6 +6,11 @@ import { useSettings } from '../context/SettingsContext';
 import { Avatar, CategoryIcon } from './ui';
 import { BrandLogo } from './BrandLogo';
 import { useOnline } from '../lib/hooks';
+import { useCity } from '../lib/geo';
+import { api, qs } from '../lib/api';
+import { money } from '../lib/format';
+
+type Suggestion = { slug: string; title: string; price: number | string; currency: string; location: string | null; category: string; image: string | null };
 
 function Logo() {
   const { settings } = useSettings();
@@ -21,73 +26,89 @@ function Logo() {
   );
 }
 
-const readLoc = () => {
-  try { return localStorage.getItem('mk_loc') ?? ''; } catch { return ''; }
-};
-
-function SearchBar({ className = '', autoFocus, showLocation = true }: { className?: string; autoFocus?: boolean; showLocation?: boolean }) {
-  const nav = useNavigate();
-  const [params] = useSearchParams();
-  const { settings } = useSettings();
-  const [q, setQ] = useState(params.get('q') ?? '');
-  const [loc, setLoc] = useState(params.get('location') ?? readLoc());
-  useEffect(() => { setQ(params.get('q') ?? ''); }, [params]);
+function SuggestBox({ q, near, onPick }: { q: string; near: string; onPick: () => void }) {
+  const [items, setItems] = useState<Suggestion[]>([]);
   useEffect(() => {
-    const sync = () => setLoc(readLoc());
-    window.addEventListener('mk-loc', sync);
-    return () => { window.removeEventListener('mk-loc', sync); };
-  }, []);
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const sp = new URLSearchParams(location.pathname === '/search' ? params : undefined);
-    q.trim() ? sp.set('q', q.trim()) : sp.delete('q');
-    loc ? sp.set('location', loc) : sp.delete('location');
-    sp.delete('page');
-    try { loc ? localStorage.setItem('mk_loc', loc) : localStorage.removeItem('mk_loc'); } catch { /* ignore */ }
-    nav(`/search?${sp}`);
-  };
+    const term = q.trim();
+    if (term.length < 2) { setItems([]); return; }
+    const ctl = new AbortController();
+    const t = setTimeout(() => {
+      api.get<{ items: Suggestion[] }>(`/api/listings/suggest${qs({ q: term, near })}`, ctl.signal)
+        .then((r) => setItems(r.items)).catch(() => { /* ignore */ });
+    }, 250);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [q, near]);
+  const term = q.trim();
+  if (term.length < 2) return null;
   return (
-    <form onSubmit={submit} role="search" className={`flex items-center h-12 rounded-full bg-stone-100 border border-transparent focus-within:bg-white focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/15 transition ${className}`}>
-      <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus={autoFocus} placeholder="Search for anything: phones, cars, furniture…" aria-label="Search listings"
-        className="flex-1 min-w-0 bg-transparent pl-5 pr-2 outline-none text-[15px]" />
-      {showLocation && (
-        <div className="hidden md:flex items-center border-l border-line pl-2 pr-1 h-7">
-          <MapPin size={16} className="text-muted" />
-          <select value={loc} onChange={(e) => setLoc(e.target.value)} aria-label="Location" className="bg-transparent outline-none text-sm font-medium text-ink-2 pl-1 pr-1 max-w-[130px]">
-            <option value="">All locations</option>
-            {settings?.site.locations.map((l) => <option key={l} value={l}>{l}</option>)}
-          </select>
-        </div>
-      )}
-      <button type="submit" aria-label="Search" className="size-9 m-1.5 shrink-0 rounded-full bg-brand text-white grid place-items-center hover:bg-brand-dark active:scale-95 transition"><Search size={18} /></button>
-    </form>
+    <div role="listbox" className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl bg-white border border-line shadow-lg overflow-hidden">
+      <Link to={`/search?q=${encodeURIComponent(term)}`} onClick={onPick} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-stone-50">
+        <Search size={16} className="text-muted shrink-0" /> <span className="truncate">Search for “<b>{term}</b>”</span>
+      </Link>
+      {items.map((it) => (
+        <Link key={it.slug} to={`/item/${it.slug}`} onClick={onPick} role="option" className="flex items-center gap-3 px-4 py-2 hover:bg-stone-50 border-t border-line/60">
+          <span className="size-10 rounded-lg bg-stone-100 overflow-hidden shrink-0">
+            {it.image && <img src={it.image} alt="" className="size-full object-cover" loading="lazy" />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium truncate">{it.title}</span>
+            <span className="block text-xs text-muted truncate">{it.category}{it.location ? ` · ${it.location}` : ''}</span>
+          </span>
+          <span className="text-sm font-semibold shrink-0">{money(it.price, it.currency)}</span>
+        </Link>
+      ))}
+    </div>
   );
 }
 
+function SearchBar({ className = '', autoFocus }: { className?: string; autoFocus?: boolean; showLocation?: boolean }) {
+  const nav = useNavigate();
+  const [params] = useSearchParams();
+  const { settings } = useSettings();
+  const { near } = useCity(settings?.site.locations);
+  const [q, setQ] = useState(params.get('q') ?? '');
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => { setQ(params.get('q') ?? ''); }, [params]);
+  useEffect(() => {
+    const close = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, []);
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setOpen(false);
+    const sp = new URLSearchParams(location.pathname === '/search' ? params : undefined);
+    q.trim() ? sp.set('q', q.trim()) : sp.delete('q');
+    sp.delete('page');
+    nav(`/search?${sp}`);
+  };
+  return (
+    <div ref={box} className={`relative ${className}`}>
+      <form onSubmit={submit} role="search" className="flex items-center h-12 rounded-full bg-stone-100 border border-transparent focus-within:bg-white focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/15 transition">
+        <input value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} autoFocus={autoFocus} autoComplete="off"
+          placeholder="Search for anything: phones, cars, furniture…" aria-label="Search listings"
+          className="flex-1 min-w-0 bg-transparent pl-5 pr-2 outline-none text-[15px]" />
+        <button type="submit" aria-label="Search" className="size-9 m-1.5 shrink-0 rounded-full bg-brand text-white grid place-items-center hover:bg-brand-dark active:scale-95 transition"><Search size={18} /></button>
+      </form>
+      {open && <SuggestBox q={q} near={near} onPick={() => setOpen(false)} />}
+    </div>
+  );
+}
+
+/** "Showing ads near: <city>" — the visitor's city is detected automatically and ads from it are listed first. */
 function LocationPicker() {
   const { settings } = useSettings();
-  const [params, setParams] = useSearchParams();
-  const here = useLocation();
-  const [value, setValue] = useState(params.get('location') ?? readLoc());
-  useEffect(() => { setValue(params.get('location') ?? readLoc()); }, [params]);
-  const change = (v: string) => {
-    setValue(v);
-    try { v ? localStorage.setItem('mk_loc', v) : localStorage.removeItem('mk_loc'); } catch { /* ignore */ }
-    window.dispatchEvent(new Event('mk-loc'));
-    if (here.pathname === '/search') {
-      const sp = new URLSearchParams(params);
-      v ? sp.set('location', v) : sp.delete('location');
-      sp.delete('page');
-      setParams(sp);
-    }
-  };
+  const { city, setCity, detecting } = useCity(settings?.site.locations);
   return (
     <label className="hidden lg:flex items-center gap-2 shrink-0 cursor-pointer rounded-xl px-2 py-1 hover:bg-stone-100">
       <MapPin size={22} className="text-brand shrink-0" />
       <span className="leading-tight">
-        <span className="block text-[11px] text-muted">Searching in</span>
+        <span className="block text-[11px] text-muted">{detecting ? 'Finding your city…' : 'Ads near'}</span>
         <span className="relative flex items-center text-[13px] font-semibold">
-          <select value={value} onChange={(e) => change(e.target.value)} aria-label="Location" className="appearance-none bg-transparent outline-none cursor-pointer pr-5 max-w-[150px] truncate">
+          <select value={city} onChange={(e) => setCity(e.target.value)} aria-label="Your city" className="appearance-none bg-transparent outline-none cursor-pointer pr-5 max-w-[150px] truncate">
             <option value="">All locations</option>
             {settings?.site.locations.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
