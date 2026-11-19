@@ -6,3 +6,4 @@ dist/
 server/storage/
 *.log
 .DS_Store
+server/.pgdata/

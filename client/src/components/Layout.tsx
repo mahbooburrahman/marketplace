@@ -87,7 +87,7 @@ function SearchBar({ className = '', autoFocus }: { className?: string; autoFocu
   };
   return (
     <div ref={box} className={`relative ${className}`}>
-      <form onSubmit={submit} role="search" className="flex items-center h-12 rounded-full bg-stone-100 border border-transparent focus-within:bg-white focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/15 transition">
+      <form onSubmit={submit} role="search" className="flex w-full items-center h-12 rounded-full bg-stone-100 border border-transparent focus-within:bg-white focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/15 transition">
         <input value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} autoFocus={autoFocus} autoComplete="off"
           placeholder="Search for anything: phones, cars, furniture…" aria-label="Search listings"
           className="flex-1 min-w-0 bg-transparent pl-5 pr-2 outline-none text-[15px]" />
