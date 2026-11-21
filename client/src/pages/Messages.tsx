@@ -342,13 +342,13 @@ export default function Messages() {
 
   return (
     <div className="md:container-page md:py-6">
-      <div className={`md:card md:overflow-hidden grid md:grid-cols-[340px_1fr] ${id ? 'h-[100dvh]' : 'h-[calc(100dvh-4rem)]'} md:h-[calc(100dvh-10rem)] bg-white`}>
-        <aside className={`${id ? 'hidden md:flex' : 'flex'} flex-col border-r border-line min-h-0 pb-16 md:pb-0`}>
+      <div className={`md:card md:overflow-hidden grid grid-rows-[minmax(0,1fr)] md:grid-cols-[340px_1fr] ${id ? 'h-[100dvh]' : 'h-[calc(100dvh-4.25rem)]'} md:h-[calc(100dvh-10rem)] bg-white`}>
+        <aside className={`${id ? 'hidden md:flex' : 'flex'} flex-col border-r border-line min-h-0 min-w-0 pb-16 md:pb-0`}>
           {loading ? <div className="p-4"><RowsSkeleton /></div> : error ? <ErrorState error={error} retry={reload} /> : (
             <ConversationList items={data!.items} activeId={id} filter={filter} setFilter={setFilter} />
           )}
         </aside>
-        <section className={`${id ? 'flex' : 'hidden md:flex'} flex-col min-h-0`}>
+        <section className={`${id ? 'flex' : 'hidden md:flex'} flex-col min-h-0 min-w-0`}>
           {id ? <Thread key={id} id={id} onActivity={onActivity} /> : (
             <div className="m-auto"><EmptyState icon={MessageCircle} title="Select a conversation" body="Choose a chat on the left to start messaging." /></div>
           )}

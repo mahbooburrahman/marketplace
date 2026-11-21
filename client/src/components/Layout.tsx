@@ -361,7 +361,7 @@ export function Layout() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 btn btn-primary">Skip to content</a>
       <OfflineBar />
       <div className={isChat ? 'hidden md:block' : ''}><Header /></div>
-      <main id="main" className={`flex-1 ${isChat ? '' : 'pb-20 md:pb-0'}`}><Outlet /></main>
+      <main id="main" className={`flex-1 min-w-0 ${isChat ? '' : loc.pathname === '/messages' ? 'md:pb-0' : 'pb-20 md:pb-0'}`}><Outlet /></main>
       {!isChat && <Footer />}
       {!isChat && <BottomNav />}
     </div>

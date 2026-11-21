@@ -69,6 +69,8 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
+/* 16px inputs stop iOS Safari zooming the page (and breaking the chat layout) when a field is focused. */
+@media (max-width: 767px) { .input, textarea.input, select.input { font-size: 16px; } }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
