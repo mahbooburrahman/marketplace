@@ -116,7 +116,7 @@ export default function ListingDetail() {
         )}
       </div>
 
-      <div className="lg:container-page grid lg:grid-cols-[1fr_380px] gap-6 items-start">
+      <div className="lg:container-page grid lg:grid-cols-2 lg:gap-10 gap-6 items-start">
         <div className="min-w-0">
           <Gallery images={l.images} title={l.title} />
           <div className="px-4 lg:px-0 mt-5 space-y-6">

@@ -59,6 +59,8 @@ export default function App() {
                       <Route index element={<Home />} />
                       <Route path="search" element={<Search />} />
                       <Route path="category/:slug" element={<Search />} />
+                      <Route path="city/:city" element={<Search />} />
+                      <Route path="city/:city/:slug" element={<Search />} />
                       <Route path="item/:slug" element={<ListingDetail />} />
                       <Route path="seller/:id" element={<SellerProfile />} />
                       <Route path="login" element={<Login />} />

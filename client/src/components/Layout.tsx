@@ -6,7 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { Avatar, CategoryIcon } from './ui';
 import { BrandLogo } from './BrandLogo';
 import { useOnline } from '../lib/hooks';
-import { useCity } from '../lib/geo';
+import { useCity, citySlug } from '../lib/geo';
 import { api, qs } from '../lib/api';
 import { money } from '../lib/format';
 
@@ -20,7 +20,7 @@ function Logo() {
       {site?.logo_url ? (
         <img src={site.logo_url} alt={site.name} className="h-9 w-auto max-w-[160px] object-contain" />
       ) : (
-        <BrandLogo markSize={30} textClass="text-[24px] hidden sm:block" />
+        <BrandLogo markSize={30} textClass="text-[21px] sm:text-[24px]" />
       )}
     </Link>
   );
@@ -115,6 +115,23 @@ function LocationPicker() {
           <ChevronDown size={14} className="pointer-events-none absolute right-0 text-muted" />
         </span>
       </span>
+    </label>
+  );
+}
+
+/** Phone version of the city selector: a small pill at the start of the category strip. */
+function MobileCity() {
+  const { settings } = useSettings();
+  const { city, setCity } = useCity(settings?.site.locations);
+  return (
+    <label className="relative flex items-center gap-1 shrink-0 h-8 pl-2.5 pr-2 rounded-full bg-brand-soft text-brand-dark text-[13px] font-semibold cursor-pointer">
+      <MapPin size={14} />
+      <span className="max-w-[96px] truncate">{city ? city.split(',')[0] : 'All Canada'}</span>
+      <ChevronDown size={13} />
+      <select value={city} onChange={(e) => setCity(e.target.value)} aria-label="Your city" className="absolute inset-0 opacity-0 cursor-pointer">
+        <option value="">All locations</option>
+        {settings?.site.locations.map((l) => <option key={l} value={l}>{l}</option>)}
+      </select>
     </label>
   );
 }
@@ -243,6 +260,7 @@ function Header() {
             </nav>
           </div>
           <nav aria-label="Categories" className="md:hidden container-page flex gap-1 overflow-x-auto no-scrollbar h-11 items-center border-t border-line/70">
+            <MobileCity />
             {categories.map((c) => (
               <NavLink key={c.id} to={`/category/${c.slug}`}
                 className={({ isActive }) => `flex items-center gap-1.5 shrink-0 px-3 h-8 rounded-lg text-[13px] font-medium transition ${isActive ? 'bg-brand-soft text-brand-dark' : 'text-ink-2 hover:bg-stone-100'}`}>
@@ -285,7 +303,7 @@ function Footer() {
   const s = settings;
   return (
     <footer className="bg-ink text-stone-300 mt-16 pb-20 md:pb-0">
-      <div className="container-page py-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="container-page py-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <BrandLogo reversed markSize={32} textClass="text-[26px]" />
           <p className="mt-2 text-sm text-stone-400 max-w-xs">{s?.site.tagline}</p>
@@ -293,6 +311,10 @@ function Footer() {
         <div>
           <p className="text-white font-semibold mb-3">Categories</p>
           <ul className="space-y-2 text-sm">{categories.slice(0, 6).map((c) => <li key={c.id}><Link className="hover:text-white" to={`/category/${c.slug}`}>{c.name}</Link></li>)}</ul>
+        </div>
+        <div>
+          <p className="text-white font-semibold mb-3">Popular cities</p>
+          <ul className="space-y-2 text-sm">{(s?.site.locations ?? []).slice(0, 6).map((l) => <li key={l}><Link className="hover:text-white" to={`/city/${citySlug(l)}`}>Buy & sell in {l.split(',')[0]}</Link></li>)}</ul>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Marketplace</p>

@@ -12,6 +12,10 @@ const COORDS: Record<string, [number, number]> = {
   Whitehorse: [60.7212, -135.0568],
 };
 
+/** URL slug of a location: "Kitchener-Waterloo, ON" -> "kitchener-waterloo". Same rule as the server (seo.ts). */
+export const citySlug = (loc: string) =>
+  loc.split(',')[0]!.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/['’.]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 const KEY = 'mk_city';
 const EVT = 'mk-city';
 const MAX_KM = 120; // farther than this from every listed city → no city preference
