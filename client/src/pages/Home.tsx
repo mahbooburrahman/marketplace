@@ -76,20 +76,6 @@ export default function Home() {
             <ProductRow title={user ? 'Recommended for you' : 'Popular right now'} items={data.recommended} />
 
             {recent.length > 0 && <Section title="Recently viewed" icon={Eye}><ListingRail items={recent} /></Section>}
-
-            {data.seller_highlights.length > 0 && (
-              <Section title="Top sellers" icon={BadgeCheck}>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 lg:grid-cols-6">
-                  {data.seller_highlights.map((s) => (
-                    <Link key={s.id} to={`/seller/${s.id}`} className="card p-4 w-40 sm:w-auto shrink-0 flex flex-col items-center text-center hover:border-brand/40 transition">
-                      <Avatar name={s.name} src={s.avatar_url} size={56} />
-                      <p className="mt-2 font-semibold text-sm truncate max-w-full flex items-center gap-1">{s.name} <BadgeCheck size={14} className="text-brand shrink-0" /></p>
-                      <p className="text-xs text-muted">{s.active_listings} active · {s.location ?? '—'}</p>
-                    </Link>
-                  ))}
-                </div>
-              </Section>
-            )}
           </>
         )}
 
