@@ -158,10 +158,10 @@ export default function ListingDetail() {
         )}
       </div>
 
-      <div className="mx-auto w-full max-w-7xl lg:px-8 grid lg:grid-cols-2 lg:gap-4 gap-6 items-start">
+      <div className="mx-auto w-full max-w-7xl lg:px-8 grid lg:grid-cols-[1.1fr_1fr] lg:gap-3 gap-6 items-start">
         <div className="min-w-0">
           <Gallery images={l.images} title={l.title} sold={l.status === 'sold'} />
-          <div className="px-4 lg:px-0 mt-4 space-y-4">
+          <div className="px-4 lg:px-0 mt-3 space-y-3">
             <div className="lg:hidden"><PriceBlock l={l} onShare={share} /></div>
             <section className="card p-5">
               <h2 className="font-bold text-lg mb-3">Details</h2>
@@ -190,7 +190,7 @@ export default function ListingDetail() {
           </div>
         </div>
 
-        <aside className="px-4 lg:px-0 flex flex-col gap-4 lg:sticky lg:top-32 lg:*:[zoom:1.1]">
+        <aside className="px-4 lg:px-0 flex flex-col gap-3 lg:sticky lg:top-32">
           <div className="hidden lg:block card p-5"><PriceBlock l={l} onShare={share} /></div>
           <div id="contact-box" className="card p-5 space-y-4 scroll-mt-24">
             {l.contact_phone && user?.can_chat && l.status !== 'sold' && (

@@ -53,7 +53,7 @@ export function Gallery({ images, title, sold }: { images: Img[]; title: string;
   };
 
   return (
-    <div className="lg:flex lg:gap-4 lg:items-start">
+    <div className="lg:flex lg:gap-3 lg:items-start">
       {n > 1 && (
         <div className="hidden lg:flex flex-col gap-2 w-[96px] shrink-0 max-h-[560px] overflow-y-auto no-scrollbar py-0.5" role="tablist" aria-label="Photos">
           {images.map((im, k) => (
