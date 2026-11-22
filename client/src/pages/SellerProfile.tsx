@@ -1,17 +1,54 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BadgeCheck, MapPin, CalendarDays, Flag } from 'lucide-react';
+import { BadgeCheck, MapPin, CalendarDays, Flag, CheckCircle2, RotateCcw } from 'lucide-react';
+import { api } from '../lib/api';
+import { useToast } from '../context/ToastContext';
 import { useFetch, usePageMeta } from '../lib/hooks';
 import type { ListingCard as L } from '../lib/types';
 import { useAuth } from '../context/AuthContext';
-import { ListingGrid } from '../components/ListingCard';
+import { ListingCard, ListingGrid } from '../components/ListingCard';
 import { ReportDialog } from '../components/ReportDialog';
-import { Avatar, Button, EmptyState, ErrorState, GridSkeleton } from '../components/ui';
+import { Avatar, Button, ConfirmDialog, EmptyState, ErrorState, GridSkeleton, errMsg } from '../components/ui';
 
 interface Data {
   seller: { id: string; name: string; avatar_url: string | null; location: string | null; bio: string | null; member_since: string; verified: boolean; status: string; active_listings: number; sold_listings: number };
   listings: L[];
   sold: L[];
+}
+
+/** The seller's own grid: each card gets a Mark as sold / Mark as available button. */
+function OwnGrid({ items, onChanged }: { items: L[]; onChanged: () => void }) {
+  const toast = useToast();
+  const [ask, setAsk] = useState<L | null>(null);
+  const sold = ask?.status === 'sold';
+  return (
+    <>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        {items.map((l) => (
+          <div key={l.id} className="flex flex-col gap-2">
+            <ListingCard l={l} />
+            {(l.status === 'published' || l.status === 'sold') && (
+              <Button variant={l.status === 'sold' ? 'primary' : 'outline'} size="sm" className="w-full" onClick={() => setAsk(l)}>
+                {l.status === 'sold' ? <><RotateCcw size={15} /> Mark as available</> : <><CheckCircle2 size={15} /> Mark as sold</>}
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+      {ask && (
+        <ConfirmDialog open onClose={() => setAsk(null)} title={sold ? 'Mark as available?' : 'Mark as sold?'}
+          body={sold ? 'Your listing will go live again and buyers can message you.' : 'Buyers will see this item as sold and can no longer message you about it.'}
+          confirmLabel={sold ? 'Mark available' : 'Mark sold'}
+          onConfirm={async () => {
+            try {
+              await api.post(`/api/my/listings/${ask.id}/${sold ? 'available' : 'sold'}`);
+              toast(sold ? 'Listing is available again' : 'Marked as sold');
+              onChanged();
+            } catch (e) { toast(errMsg(e), 'error'); }
+          }} />
+      )}
+    </>
+  );
 }
 
 export default function SellerProfile() {
@@ -53,7 +90,7 @@ export default function SellerProfile() {
         </div>
         {user && user.id !== s.id && <Button variant="ghost" size="sm" onClick={() => setReport(true)}><Flag size={15} /> Report seller</Button>}
       </div>
-      {items.length ? <ListingGrid items={items} /> : <div className="card"><EmptyState title={tab === 'active' ? 'No active listings' : 'Nothing sold yet'} /></div>}
+      {items.length ? (user?.id === s.id ? <OwnGrid items={items} onChanged={reload} /> : <ListingGrid items={items} />) : <div className="card"><EmptyState title={tab === 'active' ? 'No active listings' : 'Nothing sold yet'} /></div>}
       <ReportDialog open={report} onClose={() => setReport(false)} targetType="user" targetId={s.id} label="seller" />
     </div>
   );
