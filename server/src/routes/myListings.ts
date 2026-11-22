@@ -327,6 +327,26 @@ r.post(
   }),
 );
 
+/** POST /api/my/listings/:id/available — a sold listing goes live again (it was already approved) */
+r.post(
+  '/:id/available',
+  ah(async (req, res) => {
+    const id = parse(uuid, req.params.id);
+    const l = await ownListing(id, req.user!.id);
+    if (l.status !== 'sold') throw bad('Only sold listings can be marked as available again.');
+    const sub = await one<any>(`SELECT max_active_listings FROM seller_subscriptions WHERE user_id=$1 AND status='active' AND expires_at>now() ORDER BY expires_at DESC LIMIT 1`, [req.user!.id]);
+    if (sub && (await activeCount(req.user!.id)) >= sub.max_active_listings) throw forbidden('You have reached your active listing limit. Mark something as sold or archive it first.', 'active_limit_reached');
+    await q(
+      `UPDATE listings SET status='published', sold_at=NULL,
+              expires_at = CASE WHEN expires_at IS NULL OR expires_at < now() + interval '7 days' THEN now() + interval '30 days' ELSE expires_at END
+        WHERE id=$1`,
+      [id],
+    );
+    await audit(req, 'listing.available_again', { type: 'listing', id });
+    res.json({ status: 'published' });
+  }),
+);
+
 /** POST /api/my/listings/:id/archive — take a listing down */
 r.post(
   '/:id/archive',

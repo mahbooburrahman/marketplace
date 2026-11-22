@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Clock, Tag, BadgeCheck, MessageCircle, Flag, Share2, Phone, Eye, ShieldCheck, Lock, ArrowLeft, Pencil } from 'lucide-react';
+import { MapPin, Clock, Tag, BadgeCheck, MessageCircle, Flag, Share2, Phone, Eye, ShieldCheck, Lock, ArrowLeft, Pencil, CheckCircle2, RotateCcw } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFetch, usePageMeta } from '../lib/hooks';
 import { CONDITIONS, dateShort, money, recentlyViewed, timeAgo } from '../lib/format';
@@ -10,7 +10,7 @@ import { useToast } from '../context/ToastContext';
 import { Gallery } from '../components/Gallery';
 import { FavoriteButton, ListingRail } from '../components/ListingCard';
 import { ReportDialog } from '../components/ReportDialog';
-import { Avatar, Button, ErrorState, Notice, StatusBadge, Textarea, errMsg } from '../components/ui';
+import { Avatar, Button, ConfirmDialog, ErrorState, Notice, StatusBadge, Textarea, errMsg } from '../components/ui';
 
 function videoEmbed(url: string | null) {
   if (!url) return null;
@@ -21,7 +21,33 @@ function videoEmbed(url: string | null) {
   return null;
 }
 
-function ContactBox({ l }: { l: D }) {
+/** Seller-only: switch the listing between sold and available. */
+function OwnerActions({ l, onChanged }: { l: D; onChanged: () => void }) {
+  const toast = useToast();
+  const [ask, setAsk] = useState(false);
+  const sold = l.status === 'sold';
+  const run = async () => {
+    await api.post(`/api/my/listings/${l.id}/${sold ? 'available' : 'sold'}`);
+    toast(sold ? 'Listing is available again' : 'Marked as sold');
+    onChanged();
+  };
+  return (
+    <div className="space-y-2">
+      <Link to={`/dashboard/listings/${l.id}/edit`} className="btn btn-outline w-full"><Pencil size={16} /> Edit your listing</Link>
+      {(l.status === 'published' || sold) && (
+        <Button className="w-full" variant={sold ? 'primary' : 'outline'} onClick={() => setAsk(true)}>
+          {sold ? <><RotateCcw size={16} /> Mark as available</> : <><CheckCircle2 size={16} /> Mark as sold</>}
+        </Button>
+      )}
+      <ConfirmDialog open={ask} onClose={() => setAsk(false)} onConfirm={run}
+        title={sold ? 'Mark as available?' : 'Mark as sold?'}
+        body={sold ? 'Your listing will go live again and buyers can message you.' : 'Buyers will see this item as sold and can no longer message you about it.'}
+        confirmLabel={sold ? 'Mark available' : 'Mark sold'} />
+    </div>
+  );
+}
+
+function ContactBox({ l, onChanged }: { l: D; onChanged: () => void }) {
   const { user } = useAuth();
   const nav = useNavigate();
   const toast = useToast();
@@ -29,7 +55,7 @@ function ContactBox({ l }: { l: D }) {
   const [busy, setBusy] = useState(false);
 
   if (l.is_owner) {
-    return <Link to={`/dashboard/listings/${l.id}/edit`} className="btn btn-outline w-full"><Pencil size={16} /> Edit your listing</Link>;
+    return <OwnerActions l={l} onChanged={onChanged} />;
   }
   if (l.status !== 'published') return null;
   if (!user) {
@@ -111,14 +137,23 @@ export default function ListingDetail() {
           <Link to="/" className="hover:text-ink">Home</Link> / <Link to={`/category/${l.category.slug}`} className="hover:text-ink">{l.category.name}</Link>
           {l.subcategory && <> / <Link to={`/category/${l.category.slug}?subcategory=${l.subcategory.slug}`} className="hover:text-ink">{l.subcategory.name}</Link></>}
         </nav>
-        {(l.is_owner || user?.role === 'admin') && l.status !== 'published' && (
+        {l.status === 'sold' && (
+          <div className="mb-4 rounded-2xl bg-ink text-white px-5 py-4 flex items-center gap-4" role="status">
+            <span className="size-11 shrink-0 rounded-full bg-white/15 grid place-items-center"><CheckCircle2 size={24} /></span>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-xl font-extrabold leading-tight">{l.is_owner ? 'You marked this item as sold' : 'This item has been sold'}</p>
+              <p className="text-sm text-white/75">{l.is_owner ? 'Buyers can see it but can’t message you. Use “Mark as available” if it’s still for sale.' : 'The seller has already sold it. Have a look at similar listings below.'}</p>
+            </div>
+          </div>
+        )}
+        {(l.is_owner || user?.role === 'admin') && l.status !== 'published' && l.status !== 'sold' && (
           <div className="mb-4"><Notice title={`Preview — this listing is not public (${l.status.replace(/_/g, ' ')})`}>{l.status_note && <>Note from moderator: {l.status_note}</>}</Notice></div>
         )}
       </div>
 
       <div className="lg:container-page grid lg:grid-cols-2 lg:gap-10 gap-6 items-start">
         <div className="min-w-0">
-          <Gallery images={l.images} title={l.title} />
+          <Gallery images={l.images} title={l.title} sold={l.status === 'sold'} />
           <div className="px-4 lg:px-0 mt-5 space-y-6">
             <div className="lg:hidden"><PriceBlock l={l} onShare={share} /></div>
             <section className="card p-5">
@@ -126,7 +161,7 @@ export default function ListingDetail() {
               <dl className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4 text-sm">
                 <div><dt className="text-muted">Condition</dt><dd className="font-semibold">{CONDITIONS[l.condition]}</dd></div>
                 <div><dt className="text-muted">Category</dt><dd className="font-semibold">{l.category.name}{l.subcategory ? ` · ${l.subcategory.name}` : ''}</dd></div>
-                <div><dt className="text-muted">Availability</dt><dd className="font-semibold capitalize">{l.availability.replace('_', ' ')}</dd></div>
+                <div><dt className="text-muted">Availability</dt><dd className={`font-semibold capitalize ${l.status === 'sold' ? 'text-red-600' : ''}`}>{l.status === 'sold' ? 'Sold' : l.availability.replace('_', ' ')}</dd></div>
                 <div><dt className="text-muted">Location</dt><dd className="font-semibold">{l.location}</dd></div>
                 <div><dt className="text-muted">Posted</dt><dd className="font-semibold">{dateShort(l.published_at)}</dd></div>
                 <div><dt className="text-muted">Views</dt><dd className="font-semibold">{l.view_count}</dd></div>
@@ -151,20 +186,31 @@ export default function ListingDetail() {
         <aside className="px-4 lg:px-0 space-y-4 lg:sticky lg:top-32">
           <div className="hidden lg:block card p-5"><PriceBlock l={l} onShare={share} /></div>
           <div id="contact-box" className="card p-5 space-y-4 scroll-mt-24">
-            <Link to={`/seller/${l.seller.id}`} className="flex items-center gap-3 group">
-              <Avatar name={l.seller.name} src={l.seller.avatar_url} size={52} />
-              <div className="min-w-0">
-                <p className="font-bold flex items-center gap-1 group-hover:underline truncate">{l.seller.name}{l.seller.verified && <BadgeCheck size={16} className="text-brand shrink-0" />}</p>
-                <p className="text-xs text-muted">{l.seller.verified ? 'Verified seller' : 'Seller'} · Member since {new Date(l.seller.member_since).getFullYear()}</p>
-                <p className="text-xs text-muted">{l.seller.active_listings} active · {l.seller.sold_listings} sold</p>
-              </div>
-            </Link>
-            {l.contact_phone && user?.can_chat && (
+            {l.contact_phone && user?.can_chat && l.status !== 'sold' && (
               showPhone
                 ? <a href={`tel:${l.contact_phone}`} className="btn btn-outline w-full"><Phone size={16} /> {l.contact_phone}</a>
                 : <Button variant="outline" className="w-full" onClick={() => setShowPhone(true)}><Phone size={16} /> Show phone number</Button>
             )}
-            <ContactBox l={l} />
+            {l.status === 'sold' && !l.is_owner ? (
+              <div className="text-center space-y-3 py-1">
+                <span className="mx-auto size-12 rounded-full bg-stone-100 text-ink grid place-items-center"><CheckCircle2 size={26} /></span>
+                <p className="font-extrabold text-lg">This item has been sold</p>
+                <p className="text-sm text-muted">The seller has already sold this item, so messaging is closed.</p>
+                <Link to={`/category/${l.category.slug}`} className="btn btn-primary w-full">See similar {l.category.name.toLowerCase()}</Link>
+              </div>
+            ) : (
+              <ContactBox l={l} onChanged={reload} />
+            )}
+          </div>
+          <div className="card p-5">
+            <Link to={`/seller/${l.seller.id}`} className="flex items-center gap-3 group">
+                <Avatar name={l.seller.name} src={l.seller.avatar_url} size={52} />
+                <div className="min-w-0">
+                  <p className="font-bold flex items-center gap-1 group-hover:underline truncate">{l.seller.name}{l.seller.verified && <BadgeCheck size={16} className="text-brand shrink-0" />}</p>
+                  <p className="text-xs text-muted">{l.seller.verified ? 'Verified seller' : 'Seller'} · Member since {new Date(l.seller.member_since).getFullYear()}</p>
+                  <p className="text-xs text-muted">{l.seller.active_listings} active · {l.seller.sold_listings} sold</p>
+                </div>
+              </Link>
           </div>
           <div className="rounded-2xl bg-brand-soft p-4 text-sm flex gap-3">
             <ShieldCheck size={20} className="text-brand shrink-0" />
@@ -208,7 +254,7 @@ function PriceBlock({ l, onShare }: { l: D; onShare: () => void }) {
           {!l.is_owner && <FavoriteButton listingId={l.id} initial={l.is_favorite} className="size-10 hover:bg-stone-100" />}
         </div>
       </div>
-      <p className="mt-2 text-3xl font-extrabold text-brand-dark">{money(l.price, l.currency)}</p>
+      <p className={`mt-2 text-3xl font-extrabold ${l.status === 'sold' ? 'text-muted line-through decoration-2' : 'text-brand-dark'}`}>{money(l.price, l.currency)}</p>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
         {l.negotiable && <span className="inline-flex items-center gap-1 font-semibold text-ink-2"><Tag size={14} /> Negotiable</span>}
         {l.status !== 'published' && <StatusBadge status={l.status} kind="listing" />}

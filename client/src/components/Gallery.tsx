@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { SoldOverlay } from './ListingCard';
 import { ChevronLeft, ChevronRight, X, Expand, ImageOff } from 'lucide-react';
 
 interface Img { id: string; url: string; thumb: string }
 
-export function Gallery({ images, title }: { images: Img[]; title: string }) {
+export function Gallery({ images, title, sold }: { images: Img[]; title: string; sold?: boolean }) {
   const [i, setI] = useState(0);
   const [full, setFull] = useState(false);
   const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
@@ -66,8 +67,9 @@ export function Gallery({ images, title }: { images: Img[]; title: string }) {
       <div className="flex-1 min-w-0">
         <div className="relative aspect-[4/3] lg:aspect-square sm:rounded-2xl overflow-hidden bg-stone-900 lg:bg-white lg:border lg:border-line select-none lg:cursor-zoom-in" {...swipe}
           onMouseMove={zoomMove} onMouseLeave={() => setZoom(null)} onClick={() => { if (window.matchMedia('(min-width: 1024px)').matches) setFull(true); }}>
-          <img src={images[i]!.url} alt={`${title} — photo ${i + 1} of ${n}`} className="size-full object-contain transition-transform duration-150 ease-out"
+          <img src={images[i]!.url} alt={`${title} — photo ${i + 1} of ${n}`} className={`size-full object-contain transition-transform duration-150 ease-out ${sold ? 'grayscale opacity-60' : ''}`}
             style={zoom ? { transform: 'scale(2)', transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined} />
+          {sold && <SoldOverlay large />}
           {arrows}
           <button onClick={(e) => { e.stopPropagation(); setFull(true); }} aria-label="View full screen" className="absolute right-2 bottom-2 size-9 rounded-full bg-black/50 text-white grid place-items-center"><Expand size={16} /></button>
           {n > 1 && <span className="absolute left-3 bottom-3 rounded-full bg-black/55 text-white text-xs font-semibold px-2.5 py-1">{i + 1} / {n}</span>}

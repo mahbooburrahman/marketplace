@@ -41,26 +41,35 @@ export function FavoriteButton({ listingId, initial, className = '', onChange }:
   );
 }
 
+/** Big "SOLD" stamp over a listing photo. */
+export function SoldOverlay({ large }: { large?: boolean }) {
+  return (
+    <div className="absolute inset-0 grid place-items-center bg-black/25 pointer-events-none" aria-label="Sold">
+      <span className={`-rotate-12 rounded-md border-2 border-white text-white font-black uppercase tracking-[0.2em] bg-ink/70 backdrop-blur-[1px] shadow-lg ${large ? 'text-3xl sm:text-5xl px-6 py-2' : 'text-base sm:text-xl px-3 py-1'}`}>Sold</span>
+    </div>
+  );
+}
+
 export function ListingCard({ l, onFavoriteChange }: { l: L; onFavoriteChange?: (v: boolean) => void }) {
   return (
     <Link to={`/item/${l.slug}`} className="group card overflow-hidden flex flex-col hover:shadow-lg hover:shadow-stone-900/5 hover:-translate-y-0.5 transition duration-200">
       <div className="relative aspect-[4/3] bg-stone-100 overflow-hidden">
         {l.image ? (
-          <img src={l.image} alt={l.title} loading="lazy" decoding="async" className="size-full object-cover group-hover:scale-[1.03] transition duration-300" />
+          <img src={l.image} alt={l.title} loading="lazy" decoding="async" className={`size-full object-cover group-hover:scale-[1.03] transition duration-300 ${l.status === 'sold' ? 'grayscale opacity-60' : ''}`} />
         ) : (
           <div className="size-full grid place-items-center text-stone-400"><ImageOff size={28} /></div>
         )}
+        {l.status === 'sold' && <SoldOverlay />}
         <FavoriteButton listingId={l.id} initial={l.is_favorite} onChange={onFavoriteChange}
           className="absolute top-2 right-2 size-9 bg-white/90 backdrop-blur shadow-sm hover:bg-white" />
         <div className="absolute top-2 left-2 flex gap-1.5">
           {l.is_featured && (
             <span className="inline-flex items-center gap-1 rounded-full bg-accent text-ink text-[11px] font-bold px-2 py-0.5 shadow-sm"><Sparkles size={12} /> Featured</span>
           )}
-          {l.status === 'sold' && <span className="rounded-full bg-ink text-white text-[11px] font-bold px-2 py-0.5">Sold</span>}
         </div>
       </div>
       <div className="p-3 flex flex-col gap-1 flex-1">
-        <p className="font-extrabold text-[17px] leading-tight">
+        <p className={`font-extrabold text-[17px] leading-tight ${l.status === 'sold' ? 'text-muted line-through decoration-2' : ''}`}>
           {money(l.price, l.currency)}
           {l.negotiable && <span className="ml-1.5 text-[11px] font-semibold text-muted align-middle">Negotiable</span>}
         </p>
@@ -103,13 +112,13 @@ export function ProductTile({ l }: { l: L }) {
     <Link to={`/item/${l.slug}`} className="group block min-w-0">
       <div className="relative aspect-square rounded-2xl bg-stone-100 overflow-hidden">
         {l.image ? (
-          <img src={l.image} alt={l.title} loading="lazy" decoding="async" className="size-full object-cover group-hover:scale-[1.04] transition duration-300" />
+          <img src={l.image} alt={l.title} loading="lazy" decoding="async" className={`size-full object-cover group-hover:scale-[1.04] transition duration-300 ${l.status === 'sold' ? 'grayscale opacity-60' : ''}`} />
         ) : (
           <div className="size-full grid place-items-center text-stone-400"><ImageOff size={28} /></div>
         )}
         <FavoriteButton listingId={l.id} initial={l.is_favorite} className="absolute top-2.5 right-2.5 size-8 bg-white/90 shadow-sm hover:bg-white" />
         {l.is_featured && <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-accent text-ink text-[10px] font-bold px-2 py-0.5"><Sparkles size={11} /> Featured</span>}
-        {l.status === 'sold' && <span className="absolute left-2.5 bottom-2.5 rounded-full bg-ink text-white text-[10px] font-bold px-2 py-0.5">Sold</span>}
+        {l.status === 'sold' && <SoldOverlay />}
       </div>
       <h3 className="mt-3 text-[15px] leading-snug text-ink line-clamp-2 min-h-[2.6em] group-hover:text-brand">{l.title}</h3>
       <p className="mt-1 flex items-center gap-1 text-[12px] text-muted truncate">
@@ -119,7 +128,7 @@ export function ProductTile({ l }: { l: L }) {
         <span className="truncate">{l.seller.name}</span>
         {l.seller.verified && <BadgeCheck size={14} className="text-brand shrink-0" aria-label="Verified seller" />}
       </p>
-      <p className="mt-1.5 font-extrabold text-[17px] leading-none">
+      <p className={`mt-1.5 font-extrabold text-[17px] leading-none ${l.status === 'sold' ? 'text-muted line-through decoration-2' : ''}`}>
         {money(l.price, l.currency)}
         {l.negotiable && <span className="ml-1.5 text-[11px] font-semibold text-muted">Negotiable</span>}
       </p>
