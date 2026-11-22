@@ -228,7 +228,7 @@ export function Profile() {
   const { refresh, user } = useAuth();
   const toast = useToast();
   const { data, loading } = useFetch<{ profile: any }>('/api/account/profile');
-  const [f, setF] = useState({ full_name: '', phone: '', location: '', bio: '' });
+  const [f, setF] = useState({ full_name: '', display_name: '', phone: '', location: '', bio: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -238,7 +238,7 @@ export function Profile() {
   const locked = user?.status === 'suspended';
 
   useEffect(() => {
-    if (data) setF({ full_name: data.profile.full_name ?? '', phone: data.profile.phone ?? '', location: data.profile.location ?? '', bio: data.profile.bio ?? '' });
+    if (data) setF({ full_name: data.profile.full_name ?? '', display_name: data.profile.display_name ?? '', phone: data.profile.phone ?? '', location: data.profile.location ?? '', bio: data.profile.bio ?? '' });
   }, [data]);
 
   const save = async (e: FormEvent) => {
@@ -301,6 +301,7 @@ export function Profile() {
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Full name" error={errors.full_name}><Input value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} disabled={locked} /></Field>
+          <Field label="Display name" hint="Optional. Your trade or business name. Buyers see this instead of your full name." error={errors.display_name}><Input value={f.display_name} maxLength={80} onChange={(e) => setF({ ...f, display_name: e.target.value })} placeholder="e.g. Ahmed Electronics" disabled={locked} /></Field>
           <Field label="Mobile number" error={errors.phone}><Input type="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} disabled={locked} /></Field>
           <Field label="Email" hint="Contact support to change your email."><Input value={user?.email ?? ''} disabled /></Field>
           <Field label="Location" error={errors.location}><Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="e.g. Toronto, ON" disabled={locked} /></Field>

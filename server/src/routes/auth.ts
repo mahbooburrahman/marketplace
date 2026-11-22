@@ -57,6 +57,7 @@ export function serializeMe(u: NonNullable<Express.Request['user']>) {
     role: u.role,
     status: u.status,
     full_name: u.full_name,
+    display_name: u.display_name,
     phone: u.phone,
     location: u.location,
     avatar_url: publicUrl(u.avatar_path),

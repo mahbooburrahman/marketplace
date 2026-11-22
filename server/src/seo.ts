@@ -41,7 +41,7 @@ async function metaFor(path: string, site: any): Promise<Meta> {
   if (m) {
     const l = await one<any>(
       `SELECT l.id, l.title, l.description, l.price, l.currency, l.condition, l.location, l.status, l.slug, l.published_at,
-              c.name AS category, c.slug AS category_slug, p.full_name AS seller,
+              c.name AS category, c.slug AS category_slug, COALESCE(NULLIF(p.display_name,''), p.full_name) AS seller,
               (SELECT path FROM listing_images i WHERE i.listing_id=l.id ORDER BY sort_order LIMIT 1) AS image
          FROM listings l JOIN categories c ON c.id=l.category_id JOIN users u ON u.id=l.seller_id LEFT JOIN user_profiles p ON p.user_id=l.seller_id
         WHERE l.slug=$1 AND l.deleted_at IS NULL AND l.status IN ('published','sold') AND u.status='approved'`,
@@ -128,7 +128,7 @@ async function metaFor(path: string, site: any): Promise<Meta> {
 
   m = path.match(/^\/seller\/([0-9a-f-]{36})$/i);
   if (m) {
-    const s = await one<any>(`SELECT p.full_name, p.location FROM users u JOIN user_profiles p ON p.user_id=u.id WHERE u.id=$1 AND u.status='approved' AND u.role='user'`, [m[1]]);
+    const s = await one<any>(`SELECT COALESCE(NULLIF(p.display_name,''), p.full_name) AS full_name, p.location FROM users u JOIN user_profiles p ON p.user_id=u.id WHERE u.id=$1 AND u.status='approved' AND u.role='user'`, [m[1]]);
     if (!s) return { ...base, noindex: true, status: 404 };
     return { title: `${s.full_name} — seller on ${name}`, description: `See listings from ${s.full_name}${s.location ? ` in ${s.location}` : ''} on ${name}.`, canonical: `${config.appUrl}/seller/${m[1]}` };
   }

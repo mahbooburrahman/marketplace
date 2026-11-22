@@ -87,7 +87,7 @@ r.get(
       `SELECT c.id, c.listing_id, c.buyer_id, c.seller_id, c.last_message_at, cp.archived,
               l.title AS listing_title, l.slug AS listing_slug, l.price AS listing_price, l.currency AS listing_currency, l.status AS listing_status,
               (SELECT thumb_path FROM listing_images i WHERE i.listing_id=l.id ORDER BY sort_order LIMIT 1) AS listing_thumb,
-              o.id AS other_id, op.full_name AS other_name, op.avatar_path AS other_avatar, o.last_seen_at AS other_last_seen,
+              o.id AS other_id, COALESCE(NULLIF(op.display_name,''), op.full_name) AS other_name, op.avatar_path AS other_avatar, o.last_seen_at AS other_last_seen,
               lm.body AS last_body, lm.sender_id AS last_sender, lm.created_at AS last_at, lm.has_attachment,
               (SELECT count(*)::int FROM messages m WHERE m.conversation_id=c.id AND m.sender_id<>$1 AND m.created_at > cp.last_read_at AND m.deleted_at IS NULL) AS unread,
               EXISTS (SELECT 1 FROM blocked_users b WHERE b.blocker_id=$1 AND b.blocked_id=o.id) AS i_blocked,
@@ -133,7 +133,7 @@ r.get(
       one<any>(`SELECT l.id, l.title, l.slug, l.price, l.currency, l.status,
                        (SELECT thumb_path FROM listing_images i WHERE i.listing_id=l.id ORDER BY sort_order LIMIT 1) AS thumb
                   FROM listings l WHERE l.id=$1`, [conv.listing_id]),
-      one<any>(`SELECT u.id, p.full_name, p.avatar_path, u.last_seen_at,
+      one<any>(`SELECT u.id, COALESCE(NULLIF(p.display_name,''), p.full_name) AS full_name, p.avatar_path, u.last_seen_at,
                        EXISTS (SELECT 1 FROM blocked_users b WHERE b.blocker_id=$2 AND b.blocked_id=u.id) AS i_blocked,
                        EXISTS (SELECT 1 FROM blocked_users b WHERE b.blocker_id=u.id AND b.blocked_id=$2) AS blocked_me
                   FROM users u LEFT JOIN user_profiles p ON p.user_id=u.id WHERE u.id=$1`, [otherId, uid]),
@@ -200,7 +200,7 @@ async function postMessage(conv: any, me: NonNullable<Express.Request['user']>, 
   await notify({
     userId: otherId,
     type: 'message.new',
-    title: `New message from ${me.full_name}`,
+    title: `New message from ${me.display_name || me.full_name}`,
     body: `${listing?.title ?? 'Listing'}: ${text ? text.slice(0, 120) : '📷 Photo'}`,
     link: `/messages/${conv.id}`,
     email: sendEmail ? { subject: 'You have a new message', cta: 'Reply' } : undefined,
@@ -273,7 +273,7 @@ r.get(
 r.get(
   '/blocks',
   ah(async (req, res) => {
-    const rows = await q(`SELECT b.blocked_id AS id, p.full_name AS name, b.created_at FROM blocked_users b LEFT JOIN user_profiles p ON p.user_id=b.blocked_id WHERE b.blocker_id=$1 ORDER BY b.created_at DESC`, [req.user!.id]);
+    const rows = await q(`SELECT b.blocked_id AS id, COALESCE(NULLIF(p.display_name,''), p.full_name) AS name, b.created_at FROM blocked_users b LEFT JOIN user_profiles p ON p.user_id=b.blocked_id WHERE b.blocker_id=$1 ORDER BY b.created_at DESC`, [req.user!.id]);
     res.json({ items: rows });
   }),
 );

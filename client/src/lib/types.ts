@@ -4,6 +4,7 @@ export interface Me {
   role: 'user' | 'admin';
   status: 'email_unverified' | 'pending_approval' | 'approved' | 'rejected' | 'suspended' | 'banned';
   full_name: string;
+  display_name?: string;
   phone: string;
   location: string | null;
   avatar_url: string | null;
@@ -53,8 +54,6 @@ export interface ListingDetail extends ListingCard {
     avatar_url: string | null;
     location: string | null;
     member_since: string;
-    active_listings: number;
-    sold_listings: number;
   };
   is_owner: boolean;
 }

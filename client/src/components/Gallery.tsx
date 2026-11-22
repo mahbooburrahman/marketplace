@@ -65,7 +65,7 @@ export function Gallery({ images, title, sold }: { images: Img[]; title: string;
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="relative aspect-[4/3] lg:aspect-square sm:rounded-2xl overflow-hidden bg-stone-900 lg:bg-white lg:border lg:border-line select-none lg:cursor-zoom-in" {...swipe}
+        <div className="relative aspect-[4/3] lg:aspect-square sm:rounded-2xl overflow-hidden bg-white border border-line select-none lg:cursor-zoom-in" {...swipe}
           onMouseMove={zoomMove} onMouseLeave={() => setZoom(null)} onClick={() => { if (window.matchMedia('(min-width: 1024px)').matches) setFull(true); }}>
           <img src={images[i]!.url} alt={`${title} — photo ${i + 1} of ${n}`} className={`size-full object-contain transition-transform duration-150 ease-out ${sold ? 'grayscale opacity-60' : ''}`}
             style={zoom ? { transform: 'scale(2)', transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined} />
@@ -86,10 +86,10 @@ export function Gallery({ images, title, sold }: { images: Img[]; title: string;
         )}
       </div>
       {full && (
-        <div className="fixed inset-0 z-[95] bg-black flex items-center justify-center" role="dialog" aria-label="Photo viewer" {...swipe}>
+        <div className="fixed inset-0 z-[95] bg-white flex items-center justify-center" role="dialog" aria-label="Photo viewer" {...swipe}>
           <img src={images[i]!.url} alt={`${title} — photo ${i + 1}`} className="max-h-full max-w-full object-contain" />
           {arrows}
-          <button onClick={() => setFull(false)} aria-label="Close" className="absolute top-4 right-4 size-11 rounded-full bg-white/15 text-white grid place-items-center"><X size={22} /></button>
+          <button onClick={() => setFull(false)} aria-label="Close" className="absolute top-4 right-4 size-11 rounded-full bg-black/10 text-ink hover:bg-black/15 grid place-items-center"><X size={22} /></button>
         </div>
       )}
     </div>

@@ -103,12 +103,12 @@ r.get(
            LEFT JOIN listings l ON l.category_id = c.id AND l.status='published' AND l.deleted_at IS NULL
           WHERE c.deleted_at IS NULL AND c.is_active
           GROUP BY c.id ORDER BY listing_count DESC, c.sort_order LIMIT 8`),
-      q(`SELECT u.id, p.full_name AS name, p.avatar_path, p.location, u.created_at,
+      q(`SELECT u.id, COALESCE(NULLIF(p.display_name,''), p.full_name) AS name, p.avatar_path, p.location, u.created_at,
                 count(l.id)::int AS active_listings
            FROM users u JOIN user_profiles p ON p.user_id = u.id
            JOIN listings l ON l.seller_id = u.id AND l.status = 'published' AND l.deleted_at IS NULL
           WHERE u.status = 'approved' AND is_active_seller(u.id)
-          GROUP BY u.id, p.full_name, p.avatar_path, p.location
+          GROUP BY u.id, p.display_name, p.full_name, p.avatar_path, p.location
           ORDER BY active_listings DESC LIMIT 6`),
     ]);
 
@@ -211,11 +211,6 @@ export async function loadListingDetail(idOrSlug: string, viewer?: Express.Reque
   if (!isPublic && !isOwner && !isAdmin && row.status !== 'sold') return null;
 
   const images = await q<any>('SELECT id, path, thumb_path, width, height FROM listing_images WHERE listing_id=$1 ORDER BY sort_order, created_at', [row.id]);
-  const sellerStats = await one<any>(
-    `SELECT count(*) FILTER (WHERE status='published')::int AS active, count(*) FILTER (WHERE status='sold')::int AS sold
-       FROM listings WHERE seller_id=$1 AND deleted_at IS NULL`,
-    [row.seller_id],
-  );
   return {
     ...toCard(row),
     description: row.description,
@@ -237,8 +232,6 @@ export async function loadListingDetail(idOrSlug: string, viewer?: Express.Reque
       avatar_url: publicUrl(row.seller_avatar),
       location: row.seller_location,
       member_since: row.seller_since,
-      active_listings: sellerStats?.active ?? 0,
-      sold_listings: sellerStats?.sold ?? 0,
     },
     is_owner: isOwner,
   };

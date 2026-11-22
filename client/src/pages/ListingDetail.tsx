@@ -208,7 +208,6 @@ export default function ListingDetail() {
                 <div className="min-w-0">
                   <p className="font-bold flex items-center gap-1 group-hover:underline truncate">{l.seller.name}{l.seller.verified && <BadgeCheck size={16} className="text-brand shrink-0" />}</p>
                   <p className="text-xs text-muted">{l.seller.verified ? 'Verified seller' : 'Seller'} · Member since {new Date(l.seller.member_since).getFullYear()}</p>
-                  <p className="text-xs text-muted">{l.seller.active_listings} active · {l.seller.sold_listings} sold</p>
                 </div>
               </Link>
           </div>

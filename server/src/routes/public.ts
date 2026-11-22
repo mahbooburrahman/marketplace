@@ -53,7 +53,7 @@ r.get(
   ah(async (req, res) => {
     const id = parse(uuid, req.params.id);
     const s = await one<any>(
-      `SELECT u.id, u.created_at, u.status, p.full_name, p.avatar_path, p.location, p.bio, is_active_seller(u.id) AS verified,
+      `SELECT u.id, u.created_at, u.status, p.full_name, p.display_name, p.avatar_path, p.location, p.bio, is_active_seller(u.id) AS verified,
               (SELECT count(*)::int FROM listings l WHERE l.seller_id=u.id AND l.status='published' AND l.deleted_at IS NULL) AS active_listings,
               (SELECT count(*)::int FROM listings l WHERE l.seller_id=u.id AND l.status='sold' AND l.deleted_at IS NULL) AS sold_listings
          FROM users u JOIN user_profiles p ON p.user_id=u.id
@@ -69,7 +69,7 @@ r.get(
     res.json({
       seller: {
         id: s.id,
-        name: s.full_name,
+        name: s.display_name || s.full_name,
         avatar_url: publicUrl(s.avatar_path),
         location: s.location,
         bio: s.bio,

@@ -6,7 +6,7 @@ export const CARD_SELECT = (viewerParam: string | null) => `
   l.id, l.slug, l.title, l.price, l.currency, l.negotiable, l.location, l.condition, l.status,
   l.is_featured, l.published_at, l.created_at, l.availability,
   c.name AS category_name, c.slug AS category_slug,
-  p.full_name AS seller_name, l.seller_id, is_active_seller(l.seller_id) AS seller_verified,
+  COALESCE(NULLIF(p.display_name,''), p.full_name) AS seller_name, l.seller_id, is_active_seller(l.seller_id) AS seller_verified,
   (SELECT thumb_path FROM listing_images i WHERE i.listing_id = l.id ORDER BY sort_order, created_at LIMIT 1) AS thumb_path,
   ${viewerParam ? `EXISTS (SELECT 1 FROM favorites f WHERE f.listing_id = l.id AND f.user_id = ${viewerParam})` : 'false'} AS is_favorite
 `;

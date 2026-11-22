@@ -18,7 +18,7 @@ const cookieBase = {
 export async function loadUserBySessionHash(hash: string): Promise<AuthUser | null> {
   const row = await one<any>(
     `SELECT u.id, u.email, u.role, u.status, u.email_verified_at,
-            p.full_name, p.phone, p.avatar_path, p.location,
+            p.full_name, p.display_name, p.phone, p.avatar_path, p.location,
             is_active_seller(u.id) AS is_seller, s.last_used_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id AND u.deleted_at IS NULL
@@ -39,6 +39,7 @@ export async function loadUserBySessionHash(hash: string): Promise<AuthUser | nu
     role: row.role,
     status: row.status,
     full_name: row.full_name ?? '',
+    display_name: row.display_name ?? '',
     phone: row.phone ?? '',
     avatar_path: row.avatar_path,
     location: row.location,

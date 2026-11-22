@@ -46,14 +46,15 @@ r.patch(
     const body = parse(
       z.object({
         full_name: z.string().trim().min(2).max(80),
+        display_name: z.string().trim().max(80).optional().default(''),
         phone: z.string().trim().regex(/^\+?[0-9 ()-]{7,20}$/, 'Enter a valid mobile number.'),
         location: z.string().trim().max(80).optional().default(''),
         bio: z.string().trim().max(500).optional().default(''),
       }),
       req.body,
     );
-    await q(`UPDATE user_profiles SET full_name=$2, phone=$3, location=NULLIF($4,''), bio=NULLIF($5,''), updated_at=now() WHERE user_id=$1`,
-      [req.user!.id, body.full_name, body.phone, body.location, body.bio]);
+    await q(`UPDATE user_profiles SET full_name=$2, phone=$3, location=NULLIF($4,''), bio=NULLIF($5,''), display_name=NULLIF($6,''), updated_at=now() WHERE user_id=$1`,
+      [req.user!.id, body.full_name, body.phone, body.location, body.bio, body.display_name]);
     await audit(req, 'user.profile_updated', { type: 'user', id: req.user!.id });
     res.json({ ok: true });
   }),
@@ -62,7 +63,7 @@ r.patch(
 r.get(
   '/profile',
   ah(async (req, res) => {
-    const p = await one<any>('SELECT full_name, phone, location, bio, avatar_path FROM user_profiles WHERE user_id=$1', [req.user!.id]);
+    const p = await one<any>('SELECT full_name, display_name, phone, location, bio, avatar_path FROM user_profiles WHERE user_id=$1', [req.user!.id]);
     res.json({ profile: { ...p, avatar_url: publicUrl(p?.avatar_path), avatar_path: undefined, email: req.user!.email } });
   }),
 );
