@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Clock, Tag, BadgeCheck, MessageCircle, Flag, Share2, Phone, Eye, ShieldCheck, Lock, ArrowLeft, Pencil, CheckCircle2, RotateCcw } from 'lucide-react';
+import { MapPin, Clock, Tag, BadgeCheck, MessageCircle, Flag, Share2, Phone, Eye, ShieldCheck, Lock, ArrowLeft, ChevronRight, Pencil, CheckCircle2, RotateCcw } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFetch, usePageMeta } from '../lib/hooks';
 import { CONDITIONS, dateShort, money, recentlyViewed, timeAgo } from '../lib/format';
@@ -133,9 +133,16 @@ export default function ListingDetail() {
     <div className="pb-24 lg:pb-0">
       <div className="container-page pt-4 lg:pt-6">
         <button onClick={() => (history.length > 1 ? nav(-1) : nav('/'))} className="lg:hidden mb-3 flex items-center gap-1 text-sm font-semibold text-ink-2"><ArrowLeft size={16} /> Back</button>
-        <nav aria-label="Breadcrumb" className="hidden lg:block text-sm text-muted mb-4">
-          <Link to="/" className="hover:text-ink">Home</Link> / <Link to={`/category/${l.category.slug}`} className="hover:text-ink">{l.category.name}</Link>
-          {l.subcategory && <> / <Link to={`/category/${l.category.slug}?subcategory=${l.subcategory.slug}`} className="hover:text-ink">{l.subcategory.name}</Link></>}
+        <nav aria-label="Breadcrumb" className="hidden lg:flex items-center flex-wrap gap-x-2 gap-y-1 text-[15px] text-muted mb-4">
+          <Link to="/" className="group inline-flex items-center gap-2 font-semibold text-ink-2 hover:text-ink">
+            <span className="size-8 rounded-full border border-line bg-white grid place-items-center group-hover:bg-stone-50"><ArrowLeft size={16} /></span>
+            Back to Marketplace
+          </Link>
+          <ChevronRight size={16} className="text-stone-400" aria-hidden />
+          <Link to={`/category/${l.category.slug}`} className="hover:text-ink hover:underline">{l.category.name}</Link>
+          {l.subcategory && <><ChevronRight size={16} className="text-stone-400" aria-hidden /><Link to={`/category/${l.category.slug}?subcategory=${l.subcategory.slug}`} className="hover:text-ink hover:underline">{l.subcategory.name}</Link></>}
+          <ChevronRight size={16} className="text-stone-400" aria-hidden />
+          <span className="text-ink-2 truncate max-w-[40ch]" aria-current="page">{l.title}</span>
         </nav>
         {l.status === 'sold' && (
           <div className="mb-4 rounded-2xl bg-ink text-white px-5 py-4 flex items-center gap-4" role="status">
