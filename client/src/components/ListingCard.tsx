@@ -50,7 +50,7 @@ export function SoldOverlay({ large }: { large?: boolean }) {
   );
 }
 
-export function ListingCard({ l, onFavoriteChange }: { l: L; onFavoriteChange?: (v: boolean) => void }) {
+export function ListingCard({ l, onFavoriteChange, imageAction }: { l: L; onFavoriteChange?: (v: boolean) => void; imageAction?: React.ReactNode }) {
   return (
     <Link to={`/item/${l.slug}`} className="group card overflow-hidden flex flex-col hover:shadow-lg hover:shadow-stone-900/5 hover:-translate-y-0.5 transition duration-200">
       <div className="relative aspect-[4/3] bg-stone-100 overflow-hidden">
@@ -60,6 +60,7 @@ export function ListingCard({ l, onFavoriteChange }: { l: L; onFavoriteChange?: 
           <div className="size-full grid place-items-center text-stone-400"><ImageOff size={28} /></div>
         )}
         {l.status === 'sold' && <SoldOverlay />}
+        {imageAction && <div className="absolute bottom-2 right-2 z-10">{imageAction}</div>}
         <FavoriteButton listingId={l.id} initial={l.is_favorite} onChange={onFavoriteChange}
           className="absolute top-2 right-2 size-9 bg-white/90 backdrop-blur shadow-sm hover:bg-white" />
         <div className="absolute top-2 left-2 flex gap-1.5">

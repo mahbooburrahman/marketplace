@@ -26,12 +26,13 @@ function OwnGrid({ items, onChanged }: { items: L[]; onChanged: () => void }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {items.map((l) => (
           <div key={l.id} className="flex flex-col gap-2">
-            <ListingCard l={l} />
-            {(l.status === 'published' || l.status === 'sold') && (
-              <Button variant={l.status === 'sold' ? 'primary' : 'outline'} size="sm" className="w-full" onClick={() => setAsk(l)}>
-                {l.status === 'sold' ? <><RotateCcw size={15} /> Mark as available</> : <><CheckCircle2 size={15} /> Mark as sold</>}
-              </Button>
-            )}
+            <ListingCard l={l} imageAction={(l.status === 'published' || l.status === 'sold') ? (
+              <button type="button" title={l.status === 'sold' ? 'Mark as available' : 'Mark as sold'} aria-label={l.status === 'sold' ? 'Mark as available' : 'Mark as sold'}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAsk(l); }}
+                className={`inline-flex items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-full text-[12px] font-bold shadow-lg ring-1 ring-black/10 transition active:scale-95 ${l.status === 'sold' ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-white text-ink hover:bg-stone-50'}`}>
+                {l.status === 'sold' ? <><RotateCcw size={16} /> Mark available</> : <><CheckCircle2 size={16} /> Mark sold</>}
+              </button>
+            ) : undefined} />
           </div>
         ))}
       </div>
