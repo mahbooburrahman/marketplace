@@ -158,7 +158,7 @@ export default function ListingDetail() {
         )}
       </div>
 
-      <div className="mx-auto w-full max-w-7xl lg:px-8 grid lg:grid-cols-[3fr_2fr] lg:gap-3 gap-6 items-start">
+      <div className="mx-auto w-full max-w-7xl lg:px-8 grid lg:grid-cols-[11fr_9fr] lg:gap-3 gap-6 items-start">
         <div className="min-w-0">
           <Gallery images={l.images} title={l.title} sold={l.status === 'sold'} />
           <div className="px-4 lg:px-0 mt-3 space-y-3">
