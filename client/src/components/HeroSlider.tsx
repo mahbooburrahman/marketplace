@@ -157,7 +157,7 @@ const TINTS = [
   'bg-orange-50 text-orange-700',
 ];
 
-/** Round category tiles in a scrolling row. Uses the category photo when the admin has uploaded one. */
+/** Square category tiles in a grid. Uses the category photo when the admin has uploaded one. */
 export function CategoryCircles({ categories }: { categories: Category[] }) {
   if (!categories.length) return null;
   return (
@@ -166,13 +166,13 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
         <h2 id="home-categories" className="text-xl sm:text-2xl font-extrabold">Explore popular categories</h2>
         <Link to="/search" className="text-sm font-semibold text-brand hover:underline flex items-center gap-1">View all <ChevronRight size={16} /></Link>
       </div>
-      <div className="flex gap-3 sm:gap-4 overflow-x-auto md:overflow-visible no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
+      <div className="grid grid-cols-3 sm:grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-3">
         {categories.map((c, k) => (
-          <Link key={c.id} to={`/category/${c.slug}`} className="group shrink-0 md:shrink md:flex-1 md:basis-0 min-w-0 w-[84px] md:w-auto flex flex-col items-center gap-2 text-center">
-            <span className={`w-full max-w-[112px] aspect-square rounded-full grid place-items-center overflow-hidden ring-1 ring-black/5 transition group-hover:ring-brand/40 group-hover:shadow-md ${TINTS[k % TINTS.length]}`}>
-              {c.image_url ? <img src={c.image_url} alt="" loading="lazy" className="size-full object-cover" /> : <CategoryIcon name={c.icon} size={32} />}
+          <Link key={c.id} to={`/category/${c.slug}`} className="card group p-2.5 flex flex-col gap-2 hover:border-brand/40 hover:shadow-md transition">
+            <span className={`w-full aspect-square rounded-xl grid place-items-center overflow-hidden ${TINTS[k % TINTS.length]}`}>
+              {c.image_url ? <img src={c.image_url} alt="" loading="lazy" className="size-full object-cover" /> : <CategoryIcon name={c.icon} size={36} />}
             </span>
-            <span className="w-full text-[12px] sm:text-[13px] font-semibold leading-tight line-clamp-2 break-words">{c.name}</span>
+            <span className="w-full text-center text-[12px] sm:text-[13px] font-semibold leading-tight line-clamp-2 break-words">{c.name}</span>
           </Link>
         ))}
       </div>
