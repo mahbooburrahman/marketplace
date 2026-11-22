@@ -159,22 +159,38 @@ const TINTS = [
 
 /** Square category tiles in a grid. Uses the category photo when the admin has uploaded one. */
 export function CategoryCircles({ categories }: { categories: Category[] }) {
+  const row = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ start: true, end: false });
+  const check = () => {
+    const el = row.current;
+    if (el) setEdge({ start: el.scrollLeft <= 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 });
+  };
+  useEffect(() => {
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [categories.length]);
   if (!categories.length) return null;
+  const move = (dir: 1 | -1) => row.current?.scrollBy({ left: dir * row.current.clientWidth * 0.8, behavior: 'smooth' });
   return (
     <section className="mt-10" aria-labelledby="home-categories">
       <div className="flex items-end justify-between mb-4">
         <h2 id="home-categories" className="text-xl sm:text-2xl font-extrabold">Explore popular categories</h2>
         <Link to="/search" className="text-sm font-semibold text-brand hover:underline flex items-center gap-1">View all <ChevronRight size={16} /></Link>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-3">
-        {categories.map((c, k) => (
-          <Link key={c.id} to={`/category/${c.slug}`} className="card group p-2.5 flex flex-col gap-2 hover:border-brand/40 hover:shadow-md transition">
-            <span className={`w-full aspect-square rounded-xl grid place-items-center overflow-hidden ${TINTS[k % TINTS.length]}`}>
-              {c.image_url ? <img src={c.image_url} alt="" loading="lazy" className="size-full object-cover" /> : <CategoryIcon name={c.icon} size={36} />}
-            </span>
-            <span className="w-full text-center text-[12px] sm:text-[13px] font-semibold leading-tight line-clamp-2 break-words">{c.name}</span>
-          </Link>
-        ))}
+      <div className="relative">
+        <div ref={row} onScroll={check} className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+          {categories.map((c, k) => (
+            <Link key={c.id} to={`/category/${c.slug}`} className="card group snap-start shrink-0 w-[112px] sm:w-[136px] p-2.5 flex flex-col gap-2 hover:border-brand/40 hover:shadow-md transition">
+              <span className={`w-full aspect-square rounded-xl grid place-items-center overflow-hidden ${TINTS[k % TINTS.length]}`}>
+                {c.image_url ? <img src={c.image_url} alt="" loading="lazy" className="size-full object-cover" /> : <CategoryIcon name={c.icon} size={36} />}
+              </span>
+              <span className="w-full text-center text-[12px] sm:text-[13px] font-semibold leading-tight line-clamp-2 break-words">{c.name}</span>
+            </Link>
+          ))}
+        </div>
+        {!edge.start && <button type="button" onClick={() => move(-1)} aria-label="Previous categories" className="hidden sm:grid absolute -left-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white border border-line shadow place-items-center hover:bg-stone-50"><ChevronLeft size={20} /></button>}
+        {!edge.end && <button type="button" onClick={() => move(1)} aria-label="Next categories" className="hidden sm:grid absolute -right-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white border border-line shadow place-items-center hover:bg-stone-50"><ChevronRight size={20} /></button>}
       </div>
     </section>
   );
