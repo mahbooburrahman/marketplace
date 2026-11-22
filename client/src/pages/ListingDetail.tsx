@@ -133,15 +133,15 @@ export default function ListingDetail() {
     <div className="pb-24 lg:pb-0">
       <div className="container-page pt-4 lg:pt-6">
         <button onClick={() => (history.length > 1 ? nav(-1) : nav('/'))} className="lg:hidden mb-3 flex items-center gap-1 text-sm font-semibold text-ink-2"><ArrowLeft size={16} /> Back</button>
-        <nav aria-label="Breadcrumb" className="hidden lg:flex items-center flex-wrap gap-x-2 gap-y-1 text-[15px] text-muted mb-4">
+        <nav aria-label="Breadcrumb" className="hidden lg:flex items-center flex-wrap gap-x-1.5 gap-y-1 text-[13px] text-muted mb-4">
           <Link to="/" className="group inline-flex items-center gap-2 font-semibold text-ink-2 hover:text-ink">
-            <span className="size-8 rounded-full border border-line bg-white grid place-items-center group-hover:bg-stone-50"><ArrowLeft size={16} /></span>
+            <span className="size-7 rounded-full border border-line bg-white grid place-items-center group-hover:bg-stone-50"><ArrowLeft size={14} /></span>
             Back to Marketplace
           </Link>
-          <ChevronRight size={16} className="text-stone-400" aria-hidden />
+          <ChevronRight size={14} className="text-stone-400" aria-hidden />
           <Link to={`/category/${l.category.slug}`} className="hover:text-ink hover:underline">{l.category.name}</Link>
-          {l.subcategory && <><ChevronRight size={16} className="text-stone-400" aria-hidden /><Link to={`/category/${l.category.slug}?subcategory=${l.subcategory.slug}`} className="hover:text-ink hover:underline">{l.subcategory.name}</Link></>}
-          <ChevronRight size={16} className="text-stone-400" aria-hidden />
+          {l.subcategory && <><ChevronRight size={14} className="text-stone-400" aria-hidden /><Link to={`/category/${l.category.slug}?subcategory=${l.subcategory.slug}`} className="hover:text-ink hover:underline">{l.subcategory.name}</Link></>}
+          <ChevronRight size={14} className="text-stone-400" aria-hidden />
           <span className="text-ink-2 truncate max-w-[40ch]" aria-current="page">{l.title}</span>
         </nav>
         {l.status === 'sold' && (
