@@ -6,7 +6,7 @@ import { useFetch, usePageMeta } from '../lib/hooks';
 import { recentlyViewed } from '../lib/format';
 import type { ListingCard as L } from '../lib/types';
 import { useSettings } from '../context/SettingsContext';
-import { useCity } from '../lib/geo';
+import { useCity, GTA_CITIES, citySlug } from '../lib/geo';
 import { useAuth } from '../context/AuthContext';
 import { ListingRail, ProductRow } from '../components/ListingCard';
 import { Avatar, EmptyState, ErrorState, GridSkeleton } from '../components/ui';
@@ -36,7 +36,7 @@ export default function Home() {
   const { settings, categories } = useSettings();
   const { user } = useAuth();
   const { near } = useCity(settings?.site.locations);
-  usePageMeta(undefined, settings?.site.tagline);
+  usePageMeta('Buy & Sell in the GTA — Toronto, Mississauga, Brampton', 'Free local classifieds for the Greater Toronto Area: buy and sell electronics, furniture, household items and more in Toronto, Mississauga, Brampton, Markham and Vaughan.');
   const { data, error, loading, reload } = useFetch<HomeData>(`/api/listings/home${near ? `?near=${encodeURIComponent(near)}` : ''}`);
   const [recent, setRecent] = useState<L[]>([]);
 
@@ -78,6 +78,15 @@ export default function Home() {
             {recent.length > 0 && <Section title="Recently viewed" icon={Eye}><ListingRail items={recent} /></Section>}
           </>
         )}
+
+        <section className="mt-14" aria-labelledby="home-gta">
+          <h2 id="home-gta" className="text-xl sm:text-2xl font-extrabold mb-3">Buy &amp; sell across the Greater Toronto Area</h2>
+          <p className="text-sm text-muted mb-4 max-w-2xl">Find local deals near you — from Toronto and Mississauga to Brampton, Markham, Vaughan and Oakville.</p>
+          <div className="flex flex-wrap gap-2">
+            {GTA_CITIES.map((c) => <Link key={c} to={`/city/${citySlug(c)}`} className="chip">{c}</Link>)}
+            <Link to="/guides" className="chip chip-active">Buying &amp; selling guides</Link>
+          </div>
+        </section>
 
         {/* Trust strip */}
         <section className="mt-14 grid sm:grid-cols-3 gap-3">

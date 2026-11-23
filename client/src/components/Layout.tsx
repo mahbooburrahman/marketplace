@@ -6,7 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { Avatar, CategoryIcon } from './ui';
 import { BrandLogo } from './BrandLogo';
 import { useOnline } from '../lib/hooks';
-import { useCity, citySlug } from '../lib/geo';
+import { useCity, citySlug, GTA_CITIES } from '../lib/geo';
 import { api, qs } from '../lib/api';
 import { money } from '../lib/format';
 
@@ -315,12 +315,13 @@ function Footer() {
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Popular cities</p>
-          <ul className="space-y-2 text-sm">{(s?.site.locations ?? []).slice(0, 6).map((l) => <li key={l}><Link className="hover:text-white" to={`/city/${citySlug(l)}`}>Buy & sell in {l.split(',')[0]}</Link></li>)}</ul>
+          <ul className="space-y-2 text-sm">{GTA_CITIES.slice(0, 8).map((c) => <li key={c}><Link className="hover:text-white" to={`/city/${citySlug(c)}`}>Buy & sell in {c}</Link></li>)}</ul>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Marketplace</p>
           <ul className="space-y-2 text-sm">
             <li><Link className="hover:text-white" to="/search">Browse listings</Link></li>
+            <li><Link className="hover:text-white" to="/guides">Buying &amp; selling guides</Link></li>
             <li><Link className="hover:text-white" to="/dashboard/seller">Become a seller</Link></li>
             <li><Link className="hover:text-white" to="/dashboard/help">Help & safety</Link></li>
             <li><Link className="hover:text-white" to="/terms">Terms and conditions</Link></li>

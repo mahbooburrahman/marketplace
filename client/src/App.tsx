@@ -13,6 +13,7 @@ import ListingDetail from './pages/ListingDetail';
 import SellerProfile from './pages/SellerProfile';
 import { ForgotPassword, Login, Register, ResendVerification, ResetPassword, VerifyEmail } from './pages/Auth';
 import { LegalPage, NotFound } from './pages/Static';
+import { GuideArticle, GuidesIndex } from './pages/Guides';
 
 const Messages = lazy(() => import('./pages/Messages'));
 const Dash = {
@@ -69,6 +70,8 @@ export default function App() {
                       <Route path="resend-verification" element={<ResendVerification />} />
                       <Route path="forgot-password" element={<ForgotPassword />} />
                       <Route path="reset-password" element={<ResetPassword />} />
+                      <Route path="guides" element={<GuidesIndex />} />
+                      <Route path="guides/:slug" element={<GuideArticle />} />
                       <Route path="terms" element={<LegalPage />} />
                       <Route path="privacy" element={<LegalPage />} />
 

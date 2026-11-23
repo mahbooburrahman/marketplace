@@ -77,3 +77,18 @@ export function useCity(locations: string[] | undefined) {
   const city = raw === 'all' ? '' : raw;
   return { city, near: city, setCity, detecting: !raw };
 }
+
+/** Greater Toronto Area cities that always have a city page (even if the admin has not added them to the location list). */
+export const GTA_CITIES = [
+  'Toronto', 'Scarborough', 'North York', 'Etobicoke', 'Mississauga', 'Brampton', 'Markham', 'Vaughan', 'Richmond Hill', 'Oakville',
+  'Burlington', 'Milton', 'Pickering', 'Ajax', 'Whitby', 'Oshawa', 'Newmarket', 'Aurora', 'Caledon', 'Halton Hills',
+];
+
+/** Resolve a /city/:slug value to a location string like "Vaughan, ON" (admin list first, then the GTA list). */
+export function locationForSlug(slug: string | undefined, locations: string[] | undefined): string {
+  if (!slug) return '';
+  const found = locations?.find((l) => citySlug(l) === slug);
+  if (found) return found;
+  const gta = GTA_CITIES.find((c) => citySlug(c) === slug);
+  return gta ? `${gta}, ON` : '';
+}

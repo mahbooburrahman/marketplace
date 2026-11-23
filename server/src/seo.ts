@@ -5,6 +5,7 @@ import { config } from './config.js';
 import { escapeHtml } from './lib/security.js';
 import { getSettings } from './lib/settings.js';
 import { publicUrl } from './lib/storage.js';
+import { GTA_AREAS, GUIDES, cityContent, categoryContent, guideBySlug, gtaBySlug, type PageContent, type Faq } from './seoContent.js';
 
 /**
  * Server-side SEO for the SPA. The built index.html is served for every client route,
@@ -20,6 +21,24 @@ export const citySlug = (loc: string) =>
   loc.split(',')[0]!.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/['’.]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const cityName = (loc: string) => loc.split(',')[0]!.trim();
 const money = (cur: string, n: unknown) => `${cur === 'CAD' ? 'CA$' : cur + ' '}${Number(n).toLocaleString('en-CA')}`;
+
+/** Cities from admin settings plus every GTA area, de-duplicated by slug. */
+function allAreas(site: any): { name: string; slug: string; loc: string }[] {
+  const out = new Map<string, { name: string; slug: string; loc: string }>();
+  for (const a of GTA_AREAS) out.set(a.slug, { name: a.name, slug: a.slug, loc: `${a.name}, ON` });
+  for (const l of site.locations as string[]) if (!out.has(citySlug(l))) out.set(citySlug(l), { name: cityName(l), slug: citySlug(l), loc: l });
+  return [...out.values()];
+}
+
+const faqLd = (faq: Faq[]) => ({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
+const itemListLd = (items: { title: string; slug: string }[]) => ({ '@context': 'https://schema.org', '@type': 'ItemList', itemListElement: items.slice(0, 20).map((i, k) => ({ '@type': 'ListItem', position: k + 1, url: `${config.appUrl}/item/${i.slug}`, name: i.title })) });
+const e = escapeHtml;
+function contentHtml(c: PageContent, cityLinkBase = '/city') {
+  return `${c.intro.map((p) => `<p>${e(p)}</p>`).join('')}`
+    + c.tips.map((t) => `<h2>${e(t.title)}</h2><ul>${t.items.map((i) => `<li>${e(i)}</li>`).join('')}</ul>`).join('')
+    + `<h2>Frequently asked questions</h2>${c.faq.map((f) => `<h3>${e(f.q)}</h3><p>${e(f.a)}</p>`).join('')}`
+    + `<h2>Nearby areas</h2><ul>${c.nearby.map((n) => `<li><a href="${cityLinkBase}/${e(n.slug)}">Buy &amp; sell in ${e(n.name)}</a></li>`).join('')}</ul>`;
+}
 
 interface Meta {
   title: string;
@@ -88,20 +107,22 @@ async function metaFor(path: string, site: any): Promise<Meta> {
     const c = await one<any>(`SELECT id, name, slug FROM categories WHERE slug=$1 AND deleted_at IS NULL AND is_active`, [m[1]]);
     if (!c) return { ...base, noindex: true, status: 404 };
     const items = await q<any>(`SELECT title, slug, price, currency FROM listings WHERE category_id=$1 AND status='published' AND deleted_at IS NULL ORDER BY published_at DESC LIMIT 30`, [c.id]);
+    const cc = categoryContent(c);
     return {
-      title: `${c.name} for sale | ${name}`,
-      description: `Browse ${c.name.toLowerCase()} for sale on ${name}. ${site.tagline}`,
+      title: `${c.name} for Sale in the GTA | Toronto, Mississauga, Brampton | ${name}`,
+      description: strip(`Browse ${c.name.toLowerCase()} for sale across the GTA — Toronto, Mississauga, Brampton, Markham and more. Compare local prices in CAD and message sellers on ${name}.`, 160),
       canonical: `${config.appUrl}/category/${c.slug}`,
-      jsonLd: [breadcrumb([[name, '/'], [c.name, `/category/${c.slug}`]])],
-      body: `<h1>${escapeHtml(c.name)}</h1><ul>${items.map((i) => `<li><a href="/item/${escapeHtml(i.slug)}">${escapeHtml(i.title)} — ${escapeHtml(money(i.currency, i.price))}</a></li>`).join('')}</ul>`,
+      jsonLd: [breadcrumb([[name, '/'], [c.name, `/category/${c.slug}`]]), faqLd(cc.faq), ...(items.length ? [itemListLd(items)] : [])],
+      body: `<h1>${e(cc.heading)}</h1><ul>${items.map((i) => `<li><a href="/item/${e(i.slug)}">${e(i.title)} — ${e(money(i.currency, i.price))}</a></li>`).join('')}</ul>${contentHtml(cc, `/city`).replace(/href="\/city\/([a-z0-9-]+)"/g, `href="/city/$1/${c.slug}"`)}`,
     };
   }
 
   m = path.match(/^\/city\/([a-z0-9-]{2,60})(?:\/([a-z0-9-]{1,80}))?$/);
   if (m) {
-    const loc = (site.locations as string[]).find((x) => citySlug(x) === m![1]);
-    if (!loc) return { ...base, noindex: true, status: 404 };
-    const city = cityName(loc);
+    const areaInfo = allAreas(site).find((x) => x.slug === m![1]);
+    if (!areaInfo) return { ...base, noindex: true, status: 404 };
+    const city = areaInfo.name;
+    const loc = areaInfo.loc;
     const cat = m[2] ? await one<any>(`SELECT id, name, slug FROM categories WHERE slug=$1 AND deleted_at IS NULL AND is_active`, [m[2]]) : null;
     if (m[2] && !cat) return { ...base, noindex: true, status: 404 };
     const params: unknown[] = [`${city.replace(/[\\%_]/g, '\\$&')}%`];
@@ -112,17 +133,57 @@ async function metaFor(path: string, site: any): Promise<Meta> {
         ORDER BY l.published_at DESC LIMIT 30`,
       params,
     );
+    const cats = await q<any>(`SELECT name, slug FROM categories WHERE deleted_at IS NULL AND is_active ORDER BY sort_order LIMIT 12`);
+    const g = gtaBySlug.get(areaInfo.slug);
+    const cc = cityContent(g ?? { name: city, slug: areaInfo.slug }, cat, cats);
     const what = cat ? `${cat.name} for sale` : 'Buy & sell';
     const path2 = `/city/${m[1]}${cat ? `/${cat.slug}` : ''}`;
+    const prov = loc.split(',')[1]?.trim() ?? 'ON';
     return {
-      title: `${what} in ${loc}, Canada | ${name}`,
-      description: cat
-        ? `Find ${cat.name.toLowerCase()} for sale in ${city}, ${loc.split(',')[1]?.trim() ?? 'Canada'}. Browse local ads, compare prices and message sellers on ${name}.`
-        : `Buy and sell locally in ${city}, ${loc.split(',')[1]?.trim() ?? 'Canada'}. Browse the latest ads from ${city} sellers — electronics, vehicles, furniture and more on ${name}.`,
+      title: cat ? `${cat.name} for Sale in ${city}, ${prov} | ${name}` : `Buy & Sell in ${city}, ${prov} — Local Classifieds | ${name}`,
+      description: strip(cat
+        ? `Find ${cat.name.toLowerCase()} for sale in ${city}, ${prov}. Browse local ads, compare prices in CAD and message ${city} sellers directly on ${name}.`
+        : `Buy and sell locally in ${city}, ${prov}. Browse the latest ads from ${city} sellers — electronics, furniture, household items, fashion and more on ${name}.`, 160),
       canonical: `${config.appUrl}${path2}`,
-      noindex: items.length === 0, // no thin pages in Google
-      jsonLd: [breadcrumb([[name, '/'], [`${city}`, `/city/${m[1]}`], ...(cat ? [[cat.name, path2] as [string, string]] : [])])],
-      body: `<h1>${escapeHtml(what)} in ${escapeHtml(city)}</h1><ul>${items.map((i) => `<li><a href="/item/${escapeHtml(i.slug)}">${escapeHtml(i.title)} — ${escapeHtml(money(i.currency, i.price))}</a></li>`).join('')}</ul>`,
+      // GTA hub pages carry unique copy so they are indexable even before inventory arrives; category pages need listings.
+      noindex: cat ? items.length === 0 : !g && items.length === 0,
+      jsonLd: [
+        breadcrumb([[name, '/'], [`${city}`, `/city/${m[1]}`], ...(cat ? [[cat.name, path2] as [string, string]] : [])]),
+        faqLd(cc.faq),
+        ...(items.length ? [itemListLd(items)] : []),
+        { '@context': 'https://schema.org', '@type': 'CollectionPage', name: cc.heading, url: `${config.appUrl}${path2}`, about: { '@type': 'Place', name: `${city}, ${prov}, Canada` }, inLanguage: 'en-CA' },
+      ],
+      body: `<h1>${e(what)} in ${e(city)}</h1><ul>${items.map((i) => `<li><a href="/item/${e(i.slug)}">${e(i.title)} — ${e(money(i.currency, i.price))}</a></li>`).join('')}</ul>${!cat ? `<h2>Browse by category in ${e(city)}</h2><ul>${cats.map((c: any) => `<li><a href="/city/${m![1]}/${e(c.slug)}">${e(c.name)} in ${e(city)}</a></li>`).join('')}</ul>` : ''}${contentHtml(cc)}`,
+    };
+  }
+
+  if (path === '/guides') {
+    return {
+      ...base,
+      title: `Buying & Selling Guides for the GTA | ${name}`,
+      description: `Free guides to buying and selling second-hand items in Toronto, Mississauga, Brampton and the GTA: safety, pricing, furniture, electronics and more.`,
+      canonical: `${config.appUrl}/guides`,
+      jsonLd: [breadcrumb([[name, '/'], ['Guides', '/guides']])],
+      body: `<h1>Buying &amp; selling guides for the GTA</h1><ul>${GUIDES.map((gd) => `<li><a href="/guides/${gd.slug}">${e(gd.title)}</a> — ${e(gd.description)}</li>`).join('')}</ul>`,
+    };
+  }
+  m = path.match(/^\/guides\/([a-z0-9-]{3,100})$/);
+  if (m) {
+    const gd = guideBySlug.get(m[1]!);
+    if (!gd) return { ...base, noindex: true, status: 404 };
+    const url = `${config.appUrl}/guides/${gd.slug}`;
+    return {
+      title: `${gd.title} | ${name}`,
+      description: strip(gd.description, 160),
+      canonical: url,
+      type: 'article',
+      jsonLd: [
+        breadcrumb([[name, '/'], ['Guides', '/guides'], [gd.title, `/guides/${gd.slug}`]]),
+        { '@context': 'https://schema.org', '@type': 'Article', headline: gd.title, description: gd.description, datePublished: gd.updated, dateModified: gd.updated, inLanguage: 'en-CA',
+          mainEntityOfPage: url, author: { '@type': 'Organization', name }, publisher: { '@type': 'Organization', name, logo: { '@type': 'ImageObject', url: `${config.appUrl}/icon-512.png` } } },
+        faqLd(gd.faq),
+      ],
+      body: `<h1>${e(gd.title)}</h1>${gd.sections.map((sec) => `<h2>${e(sec.h)}</h2>${sec.p.map((x) => `<p>${e(x)}</p>`).join('')}`).join('')}<h2>FAQ</h2>${gd.faq.map((f) => `<h3>${e(f.q)}</h3><p>${e(f.a)}</p>`).join('')}`,
     };
   }
 
@@ -137,15 +198,15 @@ async function metaFor(path: string, site: any): Promise<Meta> {
   if (path === '/terms') return { ...base, title: `Terms and Conditions | ${name}` };
   if (path === '/privacy') return { ...base, title: `Privacy Policy | ${name}` };
   if (path === '/') {
-    const cities = (site.locations as string[]).slice(0, 8);
+    const top = GTA_AREAS.slice(0, 12);
     return {
       ...base,
-      title: `${name} — Buy & Sell Locally in Canada`,
-      description: `Free classifieds in Canada: buy and sell phones, cars, furniture, electronics and more in ${cities.slice(0, 4).map(cityName).join(', ')} and across the GTA. Message sellers directly on ${name}.`,
-      body: `<h1>${escapeHtml(name)} — buy and sell locally in Canada</h1><ul>${cities.map((c) => `<li><a href="/city/${citySlug(c)}">Buy &amp; sell in ${escapeHtml(cityName(c))}</a></li>`).join('')}</ul>`,
+      title: `${name} — Buy & Sell in the GTA | Toronto, Mississauga, Brampton`,
+      description: `Free local classifieds for the Greater Toronto Area: buy and sell electronics, furniture, household items and more in Toronto, Mississauga, Brampton, Markham and Vaughan.`,
+      body: `<h1>${e(name)} — buy and sell locally in the Greater Toronto Area</h1><h2>Browse by city</h2><ul>${top.map((a) => `<li><a href="/city/${a.slug}">Buy &amp; sell in ${e(a.name)}</a></li>`).join('')}</ul><h2>Guides</h2><ul>${GUIDES.map((gd) => `<li><a href="/guides/${gd.slug}">${e(gd.title)}</a></li>`).join('')}</ul>`,
       jsonLd: [{
         '@context': 'https://schema.org', '@type': 'Organization', name, url: `${config.appUrl}/`,
-        logo: `${config.appUrl}/icon-512.png`, areaServed: { '@type': 'Country', name: 'Canada' },
+        logo: `${config.appUrl}/icon-512.png`, areaServed: [{ '@type': 'AdministrativeArea', name: 'Greater Toronto Area, Ontario' }, { '@type': 'Country', name: 'Canada' }],
       }, {
         '@context': 'https://schema.org', '@type': 'WebSite', name, url: `${config.appUrl}/`,
         potentialAction: { '@type': 'SearchAction', target: `${config.appUrl}/search?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
@@ -214,14 +275,19 @@ export async function sitemap(_req: Request, res: Response, next: NextFunction) 
       q<any>(`SELECT DISTINCT l.seller_id AS id FROM listings l WHERE l.status='published' AND l.deleted_at IS NULL LIMIT 4000`),
       q<any>(`SELECT DISTINCT split_part(l.location, ',', 1) AS city, c.slug FROM listings l JOIN categories c ON c.id=l.category_id JOIN users u ON u.id=l.seller_id WHERE l.status='published' AND l.deleted_at IS NULL AND u.status='approved'`),
     ]);
-    const cityByName = new Map((site.locations as string[]).map((l) => [cityName(l).toLowerCase(), citySlug(l)]));
+    const areas = allAreas(site);
+    const cityByName = new Map(areas.map((a) => [a.name.toLowerCase(), a.slug]));
     const withListings = new Set(combos.map((c) => String(c.city).trim().toLowerCase()));
     const url = (loc: string, mod?: string, freq = 'daily') =>
       `<url><loc>${escapeHtml(config.appUrl + loc)}</loc>${mod ? `<lastmod>${new Date(mod).toISOString()}</lastmod>` : ''}<changefreq>${freq}</changefreq></url>`;
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[
       url('/', undefined, 'hourly'),
       ...cats.map((c) => url(`/category/${c.slug}`, c.updated_at)),
-      ...[...withListings].flatMap((n) => (cityByName.has(n) ? [url(`/city/${cityByName.get(n)}`)] : [])),
+      // GTA hubs always (unique content); other cities only once they have listings.
+      ...GTA_AREAS.map((a) => url(`/city/${a.slug}`, undefined, 'daily')),
+      ...[...withListings].flatMap((n) => (cityByName.has(n) && !GTA_AREAS.some((a) => a.slug === cityByName.get(n)) ? [url(`/city/${cityByName.get(n)}`)] : [])),
+      url('/guides', undefined, 'weekly'),
+      ...GUIDES.map((gd) => url(`/guides/${gd.slug}`, gd.updated, 'monthly')),
       ...combos.flatMap((c) => { const cs = cityByName.get(String(c.city).trim().toLowerCase()); return cs ? [url(`/city/${cs}/${c.slug}`, undefined, 'weekly')] : []; }),
       ...listings.map((l) => url(`/item/${l.slug}`, l.updated_at, 'weekly')),
       ...sellers.map((s) => url(`/seller/${s.id}`, undefined, 'weekly')),

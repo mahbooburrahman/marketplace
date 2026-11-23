@@ -5,7 +5,8 @@ import { qs } from '../lib/api';
 import { useFetch, usePageMeta } from '../lib/hooks';
 import type { ListingCard as L, Paged } from '../lib/types';
 import { useSettings } from '../context/SettingsContext';
-import { useCity, citySlug } from '../lib/geo';
+import { useCity, locationForSlug } from '../lib/geo';
+import { SeoSection } from '../components/SeoSection';
 import { ListingGrid } from '../components/ListingCard';
 import { Button, EmptyState, ErrorState, GridSkeleton, Pagination, Select } from '../components/ui';
 
@@ -26,7 +27,7 @@ export default function Search() {
   const cat = categories.find((c) => c.slug === category);
   const q = params.get('q') ?? '';
   // /city/toronto[/phones]: a shareable, Google-friendly page for one city.
-  const cityLoc = cityParam ? settings?.site.locations.find((l) => citySlug(l) === cityParam) ?? '' : '';
+  const cityLoc = locationForSlug(cityParam, settings?.site.locations);
   usePageMeta(
     cityLoc ? `${cat ? `${cat.name} for sale` : 'Buy & sell'} in ${cityLoc}, Canada` : cat ? `${cat.name} for sale` : q ? `“${q}”` : 'Browse listings',
     cat ? `Browse ${cat.name.toLowerCase()} for sale${cityLoc ? ` in ${cityLoc}` : ''}.` : cityLoc ? `Buy and sell locally in ${cityLoc}.` : undefined,
@@ -129,6 +130,8 @@ export default function Search() {
           ) : null}
         </div>
       </div>
+
+      {(cityParam || slug) && !q && <SeoSection city={cityLoc ? cityParam : undefined} category={slug ?? undefined} />}
 
       {filtersOpen && (
         <div className="fixed inset-0 z-[80] lg:hidden bg-black/40" onClick={() => setFiltersOpen(false)}>
