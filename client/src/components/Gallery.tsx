@@ -53,15 +53,17 @@ export function Gallery({ images, title, sold }: { images: Img[]; title: string;
   };
 
   return (
-    <div className="lg:flex lg:gap-3 lg:items-start">
+    <div className="lg:flex lg:gap-3 lg:items-stretch">
       {n > 1 && (
-        <div className="hidden lg:flex flex-col gap-2 w-[96px] shrink-0 max-h-[560px] overflow-y-auto no-scrollbar py-0.5" role="tablist" aria-label="Photos">
+        <div className="hidden lg:block relative w-[96px] shrink-0">
+        <div className="absolute inset-0 flex flex-col gap-2 overflow-y-auto no-scrollbar" role="tablist" aria-label="Photos">
           {images.map((im, k) => (
             <button key={im.id} role="tab" aria-selected={k === i} onMouseEnter={() => setI(k)} onFocus={() => setI(k)} onClick={() => setI(k)} aria-label={`Show photo ${k + 1}`}
-              className={`size-[96px] shrink-0 rounded-lg overflow-hidden bg-white ring-2 ring-offset-1 transition ${k === i ? 'ring-brand' : 'ring-stone-200 hover:ring-brand/60'}`}>
-              <img src={im.thumb} alt="" loading="lazy" className="size-full object-cover" />
+              className={`size-[96px] shrink-0 rounded-lg overflow-hidden bg-white ring-2 ring-inset transition ${k === i ? 'ring-brand' : 'ring-stone-200 hover:ring-brand/60'}`}>
+              <img src={im.thumb} alt="" loading="lazy" className="size-full object-contain" />
             </button>
           ))}
+        </div>
         </div>
       )}
       <div className="flex-1 min-w-0">
