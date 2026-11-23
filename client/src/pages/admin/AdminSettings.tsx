@@ -114,6 +114,7 @@ export default function AdminSettings() {
       <Section title="Payments" sectionKey="payments" value={s.payments} onSaved={saved}>
         {(v, set, e) => (
           <>
+            <Checkbox checked={!!v.seller_plans_enabled} onChange={(x) => set('seller_plans_enabled', x.target.checked)} label="Charge sellers for paid plans (leave OFF to approve sellers for free while you grow traffic)" />
             <Checkbox checked={v.bank_transfer_enabled} onChange={(x) => set('bank_transfer_enabled', x.target.checked)} label="Accept manual bank transfer (receipt upload + admin verification)" />
             <Field label="Bank details shown to sellers" error={e.bank_details}><Textarea rows={4} value={v.bank_details} onChange={(x) => set('bank_details', x.target.value)} /></Field>
             <Checkbox checked={v.gateway_enabled} onChange={(x) => set('gateway_enabled', x.target.checked)} label={`Offer online payment${env.gateway_configured ? '' : ' (gateway not configured on the server yet)'}`} />

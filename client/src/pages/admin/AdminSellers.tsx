@@ -11,17 +11,18 @@ export function AssignPlanDialog({ title, endpoint, onClose, onDone }: { title: 
   const toast = useToast();
   const { data } = useFetch<{ items: any[] }>('/api/admin/plans');
   const plans = data?.items.filter((p) => p.is_active) ?? [];
+  const plansOn = !!useSettings().settings?.payments.seller_plans_enabled;
   const [f, setF] = useState({ plan_id: '', custom_price: '', custom_listing_limit: '', custom_duration_days: '', waive_payment: false, note: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const plan = plans.find((p) => p.id === f.plan_id);
   const submit = async () => {
-    if (!f.plan_id) return setErr('Choose a plan.');
+    if (plansOn && !f.plan_id) return setErr('Choose a plan.');
     setBusy(true);
     setErr('');
     try {
       const r = await api.post(endpoint, {
-        plan_id: f.plan_id,
+        plan_id: plansOn ? f.plan_id : undefined,
         custom_price: f.custom_price === '' ? undefined : Number(f.custom_price),
         custom_listing_limit: f.custom_listing_limit === '' ? undefined : Number(f.custom_listing_limit),
         custom_duration_days: f.custom_duration_days === '' ? undefined : Number(f.custom_duration_days),
@@ -39,23 +40,24 @@ export function AssignPlanDialog({ title, endpoint, onClose, onDone }: { title: 
   };
   return (
     <Modal open onClose={onClose} title={title}
-      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button loading={busy} onClick={submit}><CheckCircle2 size={16} /> {f.waive_payment ? 'Approve & activate' : 'Approve & request payment'}</Button></>}>
+      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button loading={busy} onClick={submit}><CheckCircle2 size={16} /> {!plansOn ? 'Approve seller' : f.waive_payment ? 'Approve & activate' : 'Approve & request payment'}</Button></>}>
       <div className="space-y-4">
-        <Field label="Seller plan" required>
+        {!plansOn && <p className="rounded-xl bg-brand-soft text-brand-dark text-sm p-3">Paid seller plans are switched off, so this seller will be activated right away at no charge. You can turn plans on later in Settings → Payments.</p>}
+        {plansOn && <Field label="Seller plan" required>
           <Select value={f.plan_id} onChange={(e) => setF({ ...f, plan_id: e.target.value })}>
             <option value="">Choose a plan…</option>
             {plans.map((p) => <option key={p.id} value={p.id}>{p.name} — {money(p.price, p.currency)} · {p.listing_limit} listings · {p.duration_days} days</option>)}
           </Select>
-        </Field>
-        {plan && (
+        </Field>}
+        {plansOn && plan && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Fee override" hint={`Default ${money(plan.price, plan.currency)}`}><Input inputMode="decimal" value={f.custom_price} onChange={(e) => setF({ ...f, custom_price: e.target.value.replace(/[^0-9.]/g, '') })} /></Field>
             <Field label="Listing limit" hint={`Default ${plan.listing_limit}`}><Input inputMode="numeric" value={f.custom_listing_limit} onChange={(e) => setF({ ...f, custom_listing_limit: e.target.value.replace(/\D/g, '') })} /></Field>
             <Field label="Duration (days)" hint={`Default ${plan.duration_days}`}><Input inputMode="numeric" value={f.custom_duration_days} onChange={(e) => setF({ ...f, custom_duration_days: e.target.value.replace(/\D/g, '') })} /></Field>
           </div>
         )}
-        <Checkbox checked={f.waive_payment} onChange={(e) => setF({ ...f, waive_payment: e.target.checked })}
-          label={<><b>Waive payment</b> — activate immediately without a payment. Recorded in the audit log as an admin waiver.</>} />
+        {plansOn && <Checkbox checked={f.waive_payment} onChange={(e) => setF({ ...f, waive_payment: e.target.checked })}
+          label={<><b>Waive payment</b> — activate immediately without a payment. Recorded in the audit log as an admin waiver.</>} />}
         <Field label="Note to the seller (optional)"><Textarea rows={2} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} maxLength={2000} /></Field>
         {err && <p className="text-sm text-red-600">{err}</p>}
       </div>

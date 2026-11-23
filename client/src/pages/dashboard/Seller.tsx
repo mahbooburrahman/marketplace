@@ -15,6 +15,7 @@ interface Status {
   subscription: any;
   payment: { id: string; status: string; method: string; rejection_reason: string | null; reference_number: string | null } | null;
   plans: Plan[];
+  plans_enabled?: boolean;
   active_listings: number;
   payment_options: { bank_transfer: boolean; bank_details: string | null; gateway: boolean };
 }
@@ -61,13 +62,13 @@ function RequestForm({ plans, onDone }: { plans: Plan[]; onDone: () => void }) {
   };
   return (
     <form onSubmit={submit} className="space-y-6">
-      <div>
+      {plans.length > 0 && <div>
         <h2 className="font-bold text-lg mb-1">Choose a plan</h2>
         <p className="text-sm text-muted mb-3">The administrator confirms your plan and fee when approving your request.</p>
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
           {plans.map((p) => <PlanCard key={p.id} p={p} selected={f.preferred_plan_id === p.id} onSelect={() => setF({ ...f, preferred_plan_id: p.id })} />)}
         </div>
-      </div>
+      </div>}
       <div className="card p-5 sm:p-6 space-y-4">
         <h2 className="font-bold text-lg">Tell us about yourself</h2>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -197,7 +198,7 @@ function InfoResponse({ requestId, question, onDone }: { requestId: string; ques
 
 export default function Seller() {
   const { user, refresh } = useAuth();
-  usePageMeta(user?.is_seller ? 'Seller plan' : 'Become a seller');
+  usePageMeta(user?.is_seller ? 'Seller account' : 'Become a seller');
   const { data, error, loading, reload } = useFetch<Status>('/api/seller/status');
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
@@ -220,14 +221,14 @@ export default function Seller() {
     body = (
       <div className="space-y-5">
         <Notice tone="green" icon={CheckCircle2} title="Your seller account is active" action={<Link to="/dashboard/listings/new" className="btn btn-primary btn-sm"><Plus size={16} /> Create a listing</Link>}>
-          {sub.plan_name} · active until <b>{dateShort(sub.expires_at)}</b>
+          {data.plans_enabled ? <>{sub.plan_name} · active until <b>{dateShort(sub.expires_at)}</b></> : 'You can post listings. Every new listing is reviewed before it goes live.'}
         </Notice>
-        <div className="grid sm:grid-cols-3 gap-3">
+        {data.plans_enabled && <div className="grid sm:grid-cols-3 gap-3">
           {[['Listings used', `${sub.listings_used} / ${sub.listing_limit}`], ['Live right now', `${data.active_listings} / ${sub.max_active_listings}`], ['Featured boosts', sub.featured_allowed ? `${sub.featured_used} / ${sub.featured_quota}` : 'Not included']].map(([k, v]) => (
             <div key={k} className="card p-4"><p className="text-sm text-muted">{k}</p><p className="text-xl font-extrabold mt-0.5">{v}</p></div>
           ))}
-        </div>
-        {req?.status === 'pending' ? <Notice tone="blue" icon={Clock} title="Your renewal request is under review." /> : showForm ? (
+        </div>}
+        {!data.plans_enabled ? null : req?.status === 'pending' ? <Notice tone="blue" icon={Clock} title="Your renewal request is under review." /> : showForm ? (
           <RequestForm plans={data.plans} onDone={done} />
         ) : (
           <Button variant="outline" onClick={() => setShowForm(true)}>Request renewal or upgrade</Button>
@@ -259,11 +260,11 @@ export default function Seller() {
 
   return (
     <div>
-      <PageHeader title={data.is_seller ? 'Seller plan' : 'Become a seller'}
-        subtitle={data.is_seller ? 'Manage your seller plan and limits.' : 'Only authorized sellers can post listings. Every request is reviewed by an administrator.'} />
+      <PageHeader title={data.is_seller ? (data.plans_enabled ? 'Seller plan' : 'Seller account') : 'Become a seller'}
+        subtitle={data.is_seller ? (data.plans_enabled ? 'Manage your seller plan and limits.' : 'You are an approved seller.') : 'Only authorized sellers can post listings. Every request is reviewed by an administrator.'} />
       {!data.is_seller && !sub && !req && (
-        <ol className="grid sm:grid-cols-4 gap-2 mb-6 text-sm">
-          {['Request authorization', 'Admin reviews & assigns a plan', 'Pay the plan fee', 'Start posting listings'].map((t, i) => (
+        <ol className={`grid gap-2 mb-6 text-sm ${data.plans_enabled ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
+          {(data.plans_enabled ? ['Request authorization', 'Admin reviews & assigns a plan', 'Pay the plan fee', 'Start posting listings'] : ['Request authorization', 'Admin reviews your request', 'Start posting listings']).map((t, i) => (
             <li key={t} className="rounded-xl bg-white border border-line p-3 flex items-center gap-2"><span className="size-6 rounded-full bg-brand-soft text-brand font-bold grid place-items-center text-xs">{i + 1}</span>{t}</li>
           ))}
         </ol>

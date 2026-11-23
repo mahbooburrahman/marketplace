@@ -77,7 +77,8 @@ r.get(
       request,
       subscription,
       payment,
-      plans,
+      plans: settings.payments.seller_plans_enabled ? plans : [],
+      plans_enabled: !!settings.payments.seller_plans_enabled,
       active_listings: activeCount?.n ?? 0,
       payment_options: {
         bank_transfer: settings.payments.bank_transfer_enabled,

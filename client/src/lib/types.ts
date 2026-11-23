@@ -81,7 +81,7 @@ export interface PublicSettings {
     locations: string[];
   };
   contact: { email: string; phone: string; address: string; whatsapp: string };
-  payments: { bank_transfer_enabled: boolean; gateway_enabled: boolean };
+  payments: { bank_transfer_enabled: boolean; gateway_enabled: boolean; seller_plans_enabled: boolean };
   listings: { max_images: number };
 }
 

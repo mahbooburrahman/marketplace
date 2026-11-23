@@ -21,6 +21,7 @@ import {
 export function DashboardLayout() {
   const { user, counts, logout } = useAuth();
   const nav = useNavigate();
+  const plansOn = !!useSettings().settings?.payments.seller_plans_enabled;
   const links = [
     { to: '/dashboard', label: 'Overview', icon: LayoutDashboard, end: true },
     { to: '/dashboard/profile', label: 'My profile', icon: User },
@@ -29,8 +30,8 @@ export function DashboardLayout() {
     { to: '/dashboard/notifications', label: 'Notifications', icon: Bell, badge: counts.unread_notifications },
     { to: '/dashboard/status', label: 'Account status', icon: ShieldCheck },
     ...(user?.is_seller ? [{ to: '/dashboard/listings', label: 'My listings', icon: List }] : []),
-    { to: '/dashboard/seller', label: user?.is_seller ? 'Seller plan' : 'Become a seller', icon: Store },
-    { to: '/dashboard/payments', label: 'Payment history', icon: CreditCard },
+    { to: '/dashboard/seller', label: user?.is_seller ? (plansOn ? 'Seller plan' : 'Seller account') : 'Become a seller', icon: Store },
+    ...(plansOn ? [{ to: '/dashboard/payments', label: 'Payment history', icon: CreditCard }] : []),
     { to: '/dashboard/help', label: 'Help & support', icon: LifeBuoy },
   ];
   const cls = ({ isActive }: { isActive: boolean }) =>
@@ -98,6 +99,7 @@ export function AccountStatusNotice() {
 export function Overview() {
   usePageMeta('Dashboard');
   const { user } = useAuth();
+  const plansOn = !!useSettings().settings?.payments.seller_plans_enabled;
   const { data, error, loading, reload } = useFetch<any>('/api/account/overview');
   if (loading) return <RowsSkeleton n={4} />;
   if (error || !data) return <ErrorState error={error} retry={reload} />;
@@ -112,7 +114,7 @@ export function Overview() {
       {data.seller_request?.status === 'info_requested' && (
         <Notice tone="amber" title="The admin needs more information for your seller request" action={<Link to="/dashboard/seller" className="btn btn-sm btn-primary">Respond</Link>}>{data.seller_request.info_requested}</Notice>
       )}
-      {sub?.status === 'awaiting_payment' && (
+      {plansOn && sub?.status === 'awaiting_payment' && (
         <Notice tone="brand" icon={CreditCard} title={`Seller approved — complete payment for ${sub.plan_name}`} action={<Link to="/dashboard/seller" className="btn btn-sm btn-primary">Pay {money(sub.price, sub.currency)}</Link>}>
           Listing creation activates once your payment is verified.
         </Notice>
@@ -134,7 +136,7 @@ export function Overview() {
           <StatCard label="Total views" value={c.total_views} icon={Eye} />
         </div>
       )}
-      {sub?.status === 'active' && (
+      {plansOn && sub?.status === 'active' && (
         <div className="card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -443,12 +445,12 @@ export function Payments() {
 
 export function Help() {
   usePageMeta('Help & support');
+  const plansOn = !!useSettings().settings?.payments.seller_plans_enabled;
   const faqs = [
     ['Why can’t I message sellers yet?', 'For everyone’s safety, every new account is reviewed by an administrator after email verification. You’ll get an email as soon as you’re approved.'],
     ['How do I become a seller?', 'Go to “Become a seller”, tell us what you plan to sell and submit the request. If approved, you’ll be assigned a plan; once your payment is verified you can post listings.'],
     ['Why isn’t my listing visible?', 'Every listing is reviewed before it goes live. Editing the title, price, description, category or photos of a live listing sends it back for review.'],
-    ['How do I pay for a seller plan?', 'Use bank transfer and upload your receipt with the transaction reference, or pay online if available. Privileges activate only after the payment is verified.'],
-    ['What happens when my plan expires?', 'Listing creation is disabled and your live listings are taken down until you renew. You’ll get a reminder before it expires.'],
+    ...(plansOn ? [['How do I pay for a seller plan?', 'Use bank transfer and upload your receipt with the transaction reference, or pay online if available. Privileges activate only after the payment is verified.'], ['What happens when my plan expires?', 'Listing creation is disabled and your live listings are taken down until you renew. You’ll get a reminder before it expires.']] : []),
     ['How do I report a problem?', 'Use “Report” on any listing, seller profile or conversation. Our moderators review every report.'],
   ];
   return (

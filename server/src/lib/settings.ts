@@ -29,6 +29,8 @@ export const DEFAULT_SETTINGS: Record<string, unknown> = {
     bank_details: 'Interac e-Transfer to: payments@your-domain.ca\nUse your account email as the message.\n(Configure in Admin → Settings → Payments)',
     gateway_enabled: false,
     payment_window_days: 7,
+    // When false, approved sellers are activated for free and no plans or fees are shown to sellers.
+    seller_plans_enabled: false,
   },
   listings: { lifetime_days: 30, expiry_reminder_days: 3, max_images: 10, auto_expire: true },
   chat: { messages_per_minute: 20 },
@@ -60,6 +62,7 @@ export function publicSettings(s: Record<string, any>) {
     payments: {
       bank_transfer_enabled: s.payments.bank_transfer_enabled,
       gateway_enabled: s.payments.gateway_enabled,
+      seller_plans_enabled: !!s.payments.seller_plans_enabled,
     },
     listings: { max_images: s.listings.max_images },
   };

@@ -215,7 +215,7 @@ r.get(
 );
 
 const assignSchema = z.object({
-  plan_id: uuid,
+  plan_id: uuid.optional(),
   custom_price: z.coerce.number().min(0).optional(),
   custom_listing_limit: z.coerce.number().int().min(1).max(100000).optional(),
   custom_duration_days: z.coerce.number().int().min(1).max(3650).optional(),
@@ -224,12 +224,28 @@ const assignSchema = z.object({
 });
 
 /** Create a subscription for a user (from a request, or directly by the admin). */
+const FREE_PLAN_NAME = 'Free launch plan';
+async function ensureFreePlan(c: PoolClient) {
+  const found = await one<any>('SELECT * FROM seller_plans WHERE name=$1 AND deleted_at IS NULL', [FREE_PLAN_NAME], c);
+  if (found) return found;
+  return one<any>(
+    `INSERT INTO seller_plans (name, kind, description, price, currency, listing_limit, max_active_listings, duration_days, is_active, sort_order)
+     VALUES ($1,'custom','Free access while paid plans are switched off',0,'CAD',500,500,3650,false,999) RETURNING *`,
+    [FREE_PLAN_NAME], c,
+  );
+}
+
 async function assignPlan(c: PoolClient, adminId: string, userId: string, requestId: string | null, a: z.infer<typeof assignSchema>) {
-  const plan = await one<any>('SELECT * FROM seller_plans WHERE id=$1 AND deleted_at IS NULL', [a.plan_id], c);
+  const settings = await getSettings(c);
+  const plansOn = !!settings.payments.seller_plans_enabled;
+  // While paid plans are switched off, every approved seller gets the free launch plan, activated immediately.
+  const plan = plansOn && a.plan_id
+    ? await one<any>('SELECT * FROM seller_plans WHERE id=$1 AND deleted_at IS NULL', [a.plan_id], c)
+    : plansOn ? null : await ensureFreePlan(c);
   if (!plan) throw bad('Choose a valid plan.');
+  if (!plansOn) a = { ...a, custom_price: 0, custom_listing_limit: undefined, custom_duration_days: undefined, waive_payment: true };
   const open = await one(`SELECT id FROM seller_subscriptions WHERE user_id=$1 AND status IN ('awaiting_payment','payment_review')`, [userId], c);
   if (open) throw conflict('This user already has a plan awaiting payment.');
-  const settings = await getSettings(c);
   const price = a.custom_price ?? plan.price;
   const sub = await one<any>(
     `INSERT INTO seller_subscriptions (user_id, plan_id, request_id, status, plan_name, price, currency, listing_limit, max_active_listings,
@@ -264,7 +280,7 @@ async function approveAccountIfPending(c: PoolClient, adminId: string, userId: s
 
 async function announceAssignment(userId: string, sub: any, activated: boolean, adminNote?: string) {
   if (activated) {
-    await notify({ userId, type: 'seller.active', title: 'Seller privileges activated', body: `Your ${sub.plan_name} plan is active. You can now create listings.`,
+    await notify({ userId, type: 'seller.active', title: 'Seller privileges activated', body: sub.plan_name === FREE_PLAN_NAME ? 'You are now an approved seller. You can create listings.' : `Your ${sub.plan_name} plan is active. You can now create listings.`,
       link: '/dashboard/listings/new', email: { cta: 'Create your first listing' } });
   } else {
     await notify({
@@ -919,6 +935,7 @@ const settingSchemas: Record<string, z.ZodTypeAny> = {
     bank_details: z.string().max(2000),
     gateway_enabled: z.boolean(),
     payment_window_days: z.coerce.number().int().min(1).max(90),
+    seller_plans_enabled: z.boolean().default(false),
   }),
   listings: z.object({
     lifetime_days: z.coerce.number().int().min(1).max(365),
