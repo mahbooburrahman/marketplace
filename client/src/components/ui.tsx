@@ -173,7 +173,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
           <button onClick={onClose} className="btn-ghost rounded-full p-2 -mr-2" aria-label="Close"><X size={20} /></button>
         </div>
         <div className="px-4 sm:px-5 py-4 overflow-y-auto overscroll-contain min-h-0">{children}</div>
-        {footer && <div className="px-4 sm:px-5 py-3 border-t border-line flex flex-col-reverse sm:flex-row sm:justify-end gap-2 safe-bottom [&_.btn]:w-full sm:[&_.btn]:w-auto">{footer}</div>}
+        {footer && <div className="px-4 sm:px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-line flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 shrink-0 [&_.btn]:w-full sm:[&_.btn]:w-auto">{footer}</div>}
       </div>
     </div>
   );

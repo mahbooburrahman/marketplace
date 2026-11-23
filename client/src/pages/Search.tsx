@@ -132,7 +132,7 @@ export default function Search() {
 
       {filtersOpen && (
         <div className="fixed inset-0 z-[80] lg:hidden bg-black/40" onClick={() => setFiltersOpen(false)}>
-          <div className="animate-rise absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-white rounded-t-3xl p-5 safe-bottom" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Filters">
+          <div className="animate-rise absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto bg-white rounded-t-3xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Filters">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">Filters</h2>
               <button onClick={() => setFiltersOpen(false)} aria-label="Close filters" className="p-2"><X size={20} /></button>

@@ -267,7 +267,7 @@ function Thread({ id, onActivity }: { id: string; onActivity: () => void }) {
       </div>
 
       {/* Composer */}
-      <div className="border-t border-line bg-white p-2.5 sm:p-3 shrink-0 safe-bottom">
+      <div className="border-t border-line bg-white p-2.5 sm:p-3 shrink-0 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         {!canSend ? (
           <Notice tone="red" icon={Lock} title={conv.i_blocked ? 'You blocked this user' : conv.blocked_me ? 'You can no longer message this user' : 'Your account cannot send messages right now'} />
         ) : (
