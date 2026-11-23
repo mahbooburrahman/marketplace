@@ -229,7 +229,7 @@ function Header() {
               <Link to="/messages" className={`${iconBtn} hidden md:grid`} aria-label="Messages"><MessageCircle size={20} /><CountDot n={counts.unread_messages} /></Link>
               <Link to="/dashboard/notifications" className={iconBtn} aria-label="Notifications"><Bell size={20} /><CountDot n={counts.unread_notifications} /></Link>
               {user.is_seller && (
-                <Link to="/dashboard/listings/new" className="btn btn-accent btn-sm hidden sm:inline-flex"><Plus size={16} /> Sell</Link>
+                <Link to="/dashboard/listings/new" className="btn btn-accent btn-sm hidden sm:inline-flex md:hidden"><Plus size={16} /> Sell</Link>
               )}
               <div className="hidden md:block"><UserMenu /></div>
             </>
@@ -257,6 +257,7 @@ function Header() {
                 ))}
               </div>
               <Link to="/search?featured=1" className="shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-lg text-sm font-semibold text-brand hover:bg-brand-soft"><Gift size={18} /> Best deals</Link>
+              {user?.is_seller && <Link to="/dashboard/listings/new" className="btn btn-accent btn-sm shrink-0 ml-1"><Plus size={16} /> Sell</Link>}
             </nav>
           </div>
           <nav aria-label="Categories" className="md:hidden container-page flex gap-1 overflow-x-auto no-scrollbar h-11 items-center border-t border-line/70">
