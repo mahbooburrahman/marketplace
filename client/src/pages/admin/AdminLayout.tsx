@@ -138,7 +138,7 @@ export function AdminActivity() {
       <PageHeader title="Activity log" subtitle="An append-only record of every important action. Entries cannot be edited or deleted." />
       <div className="flex flex-wrap gap-2 mb-4">
         <Input placeholder="Filter by action, e.g. listing. or payment.verified" value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }} className="max-w-sm" />
-        <Select value={adminOnly} onChange={(e) => { setAdminOnly(e.target.value); setPage(1); }} className="w-56">
+        <Select value={adminOnly} onChange={(e) => { setAdminOnly(e.target.value); setPage(1); }} className="w-full sm:w-56">
           <option value="1">Admin & system actions</option><option value="0">All actions</option>
         </Select>
       </div>

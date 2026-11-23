@@ -34,7 +34,7 @@ export default function AdminPayments() {
           {data.items.map((p: any) => (
             <div key={p.id} className="card p-4 sm:p-5">
               <div className="flex flex-wrap justify-between gap-3">
-                <div>
+                <div className="min-w-0 break-words">
                   <p className="text-xl font-extrabold">{money(p.amount, p.currency)}</p>
                   <p className="text-sm"><b>{p.full_name}</b> <span className="text-muted">· {p.email}</span></p>
                   <p className="text-sm text-muted">{p.plan_name} · {p.method.replace('_', ' ')}{p.provider !== 'manual' && ` (${p.provider})`} · {dateTime(p.created_at)}</p>

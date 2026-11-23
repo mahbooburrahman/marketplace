@@ -50,10 +50,10 @@ export default function AdminReports() {
     <div>
       <PageHeader title="Reports" subtitle="Investigate reported listings, sellers and conversations, and handle disputes." />
       <div className="flex flex-wrap gap-2 mb-4">
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-56">
+        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full sm:w-56">
           <option value="">Open & investigating</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option>
         </Select>
-        <Select value={type} onChange={(e) => setType(e.target.value)} className="w-44">
+        <Select value={type} onChange={(e) => setType(e.target.value)} className="w-full sm:w-44">
           <option value="">All types</option><option value="listing">Listings</option><option value="user">Users</option><option value="conversation">Conversations</option>
         </Select>
       </div>

@@ -48,7 +48,7 @@ export function AssignPlanDialog({ title, endpoint, onClose, onDone }: { title: 
           </Select>
         </Field>
         {plan && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Fee override" hint={`Default ${money(plan.price, plan.currency)}`}><Input inputMode="decimal" value={f.custom_price} onChange={(e) => setF({ ...f, custom_price: e.target.value.replace(/[^0-9.]/g, '') })} /></Field>
             <Field label="Listing limit" hint={`Default ${plan.listing_limit}`}><Input inputMode="numeric" value={f.custom_listing_limit} onChange={(e) => setF({ ...f, custom_listing_limit: e.target.value.replace(/\D/g, '') })} /></Field>
             <Field label="Duration (days)" hint={`Default ${plan.duration_days}`}><Input inputMode="numeric" value={f.custom_duration_days} onChange={(e) => setF({ ...f, custom_duration_days: e.target.value.replace(/\D/g, '') })} /></Field>
@@ -87,7 +87,7 @@ export default function AdminSellers() {
 
       {tab === 'requests' && (
         <>
-          <Select value={reqStatus} onChange={(e) => setReqStatus(e.target.value)} className="w-56 mb-4">
+          <Select value={reqStatus} onChange={(e) => setReqStatus(e.target.value)} className="w-full sm:w-56 mb-4">
             <option value="">Open (pending & info requested)</option>
             <option value="approved">Approved</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option>
           </Select>
@@ -124,7 +124,7 @@ export default function AdminSellers() {
 
       {tab === 'subscriptions' && (
         <>
-          <Select value={subStatus} onChange={(e) => setSubStatus(e.target.value)} className="w-56 mb-4">
+          <Select value={subStatus} onChange={(e) => setSubStatus(e.target.value)} className="w-full sm:w-56 mb-4">
             <option value="">All subscriptions</option>
             {['active', 'awaiting_payment', 'payment_review', 'expired', 'revoked', 'cancelled'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
           </Select>

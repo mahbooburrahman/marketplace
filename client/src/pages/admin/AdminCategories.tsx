@@ -133,7 +133,7 @@ export default function AdminCategories() {
             <Field label="Name" required><Input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
             <Field label="URL slug" hint="Leave blank to generate from the name."><Input value={edit.slug} onChange={(e) => setEdit({ ...edit, slug: e.target.value })} /></Field>
             <Field label="Icon">
-              <div className="grid grid-cols-8 gap-1.5">
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
                 {Object.keys(CATEGORY_ICONS).map((k) => (
                   <button key={k} type="button" onClick={() => setEdit({ ...edit, icon: k })} aria-label={k} aria-pressed={edit.icon === k}
                     className={`aspect-square rounded-lg grid place-items-center ${edit.icon === k ? 'bg-brand text-white' : 'bg-stone-100 hover:bg-stone-200'}`}><CategoryIcon name={k} size={18} /></button>

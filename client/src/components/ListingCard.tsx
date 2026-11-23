@@ -142,7 +142,7 @@ export function ProductRow({ title, to, items }: { title: string; to?: string; i
   if (!items.length) return null;
   return (
     <section className="mt-12" aria-label={title}>
-      <div className="flex items-end justify-between mb-5">
+      <div className="flex items-end justify-between gap-3 mb-5">
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">{title}</h2>
         {to && <Link to={to} className="text-sm font-semibold text-brand hover:underline flex items-center gap-0.5">View All <ChevronRight size={16} /></Link>}
       </div>

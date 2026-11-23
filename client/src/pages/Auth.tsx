@@ -89,7 +89,7 @@ export function Login() {
         {error && <p className="rounded-xl bg-red-50 text-red-700 text-sm px-3 py-2.5" role="alert">{error}</p>}
         <Field label="Email" htmlFor="email"><Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
         <Field label="Password" htmlFor="password"><PasswordInput id="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-        <div className="flex justify-between text-sm">
+        <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-sm">
           <Link to="/resend-verification" className="text-muted hover:text-ink">Resend verification</Link>
           <Link to="/forgot-password" className="text-brand font-semibold">Forgot password?</Link>
         </div>

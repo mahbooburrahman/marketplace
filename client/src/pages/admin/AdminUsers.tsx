@@ -37,7 +37,7 @@ function UserDetail({ id, onClose, onChanged }: { id: string; onClose: () => voi
             <Avatar name={u.full_name} src={u.avatar_url} size={64} />
             <div className="flex-1 min-w-0">
               <p className="text-lg font-bold">{u.full_name} {u.role === 'admin' && <Badge tone="brand">Admin</Badge>}</p>
-              <p className="text-sm text-muted flex items-center gap-1.5"><Mail size={14} /> {u.email} {u.email_verified_at ? <Badge tone="green">verified</Badge> : <Badge tone="amber">unverified</Badge>}</p>
+              <p className="text-sm text-muted flex flex-wrap items-center gap-1.5 break-all"><Mail size={14} /> {u.email} {u.email_verified_at ? <Badge tone="green">verified</Badge> : <Badge tone="amber">unverified</Badge>}</p>
               <p className="text-sm text-muted flex items-center gap-1.5"><Phone size={14} /> {u.phone || '—'} · {u.location || 'No location'}</p>
             </div>
             <div className="text-right space-y-1">
@@ -145,11 +145,11 @@ export default function AdminUsers() {
     <div>
       <PageHeader title="Users" subtitle="Approve accounts for messaging, and moderate members." />
       <div className="flex flex-wrap gap-2 mb-4">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
+        <div className="relative flex-1 min-w-full sm:min-w-[220px] max-w-md">
           <Search size={16} className="absolute left-3 top-3.5 text-muted" />
           <Input placeholder="Search name, email or phone" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
         </div>
-        <Select value={status} onChange={(e) => setParams(e.target.value ? { status: e.target.value } : {})} className="w-52">
+        <Select value={status} onChange={(e) => setParams(e.target.value ? { status: e.target.value } : {})} className="w-full sm:w-52">
           <option value="">All statuses</option>
           {['email_unverified', 'pending_approval', 'approved', 'rejected', 'suspended', 'banned'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
         </Select>

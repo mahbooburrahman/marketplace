@@ -128,7 +128,7 @@ export function Overview() {
         )}
       </div>
       {(user?.is_seller || c.live_listings > 0) && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-3">
           <StatCard label="In review" value={c.pending_listings} icon={Clock} tone="amber" to="/dashboard/listings?status=pending_approval" />
           <StatCard label="Need attention" value={c.needs_attention} icon={AlertTriangle} tone={c.needs_attention ? 'red' : 'brand'} to="/dashboard/listings?status=changes_requested" />
           <StatCard label="Total views" value={c.total_views} icon={Eye} />
@@ -150,7 +150,7 @@ export function Overview() {
         </div>
       )}
       <div className="card">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-line">
           <h2 className="font-bold">Recent notifications</h2>
           <Link to="/dashboard/notifications" className="text-sm font-semibold text-brand">View all</Link>
         </div>
@@ -307,7 +307,7 @@ export function Profile() {
           <Field label="Location" error={errors.location}><Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="e.g. Toronto, ON" disabled={locked} /></Field>
         </div>
         <Field label="About you" hint="Shown on your seller profile." error={errors.bio}><Textarea rows={3} maxLength={500} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} disabled={locked} /></Field>
-        <div className="flex justify-end"><Button type="submit" loading={busy} disabled={locked}>Save changes</Button></div>
+        <div className="flex justify-end [&_.btn]:w-full sm:[&_.btn]:w-auto"><Button type="submit" loading={busy} disabled={locked}>Save changes</Button></div>
       </form>
 
       <form onSubmit={changePw} className="card p-5 sm:p-6 space-y-4">
@@ -318,7 +318,7 @@ export function Profile() {
           <Field label="New password" error={pwErr.password}><PasswordInput autoComplete="new-password" value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} /></Field>
           <Field label="Confirm new password" error={pwErr.confirm_password}><PasswordInput autoComplete="new-password" value={pw.confirm_password} onChange={(e) => setPw({ ...pw, confirm_password: e.target.value })} /></Field>
         </div>
-        <div className="flex justify-end"><Button type="submit" variant="outline" loading={pwBusy} disabled={locked}>Update password</Button></div>
+        <div className="flex justify-end [&_.btn]:w-full sm:[&_.btn]:w-auto"><Button type="submit" variant="outline" loading={pwBusy} disabled={locked}>Update password</Button></div>
       </form>
     </div>
   );
@@ -361,7 +361,7 @@ export function AccountStatus() {
         {!blocks?.items.length ? <p className="text-sm text-muted">You haven't blocked anyone.</p> : (
           <ul className="divide-y divide-line">
             {blocks.items.map((b) => (
-              <li key={b.id} className="flex items-center justify-between py-2.5">
+              <li key={b.id} className="flex items-center justify-between gap-3 py-2.5">
                 <span className="font-medium">{b.name} <span className="text-xs text-muted">· since {dateShort(b.created_at)}</span></span>
                 <Button size="sm" variant="outline" onClick={async () => { await api.del(`/api/chat/blocks/${b.id}`); toast('Unblocked'); reload(); }}>Unblock</Button>
               </li>

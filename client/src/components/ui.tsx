@@ -167,13 +167,13 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
   return (
     <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} role="dialog" aria-modal="true" aria-label={title}
-        className={`animate-rise bg-white w-full ${wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'} rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col`}>
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-          <h2 className="text-lg font-bold">{title}</h2>
+        className={`animate-rise bg-white w-full ${wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'} rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92dvh] flex flex-col`}>
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-4 pb-3 border-b border-line shrink-0">
+          <h2 className="text-lg font-bold min-w-0 break-words">{title}</h2>
           <button onClick={onClose} className="btn-ghost rounded-full p-2 -mr-2" aria-label="Close"><X size={20} /></button>
         </div>
-        <div className="px-5 py-4 overflow-y-auto">{children}</div>
-        {footer && <div className="px-5 py-3 border-t border-line flex justify-end gap-2 safe-bottom">{footer}</div>}
+        <div className="px-4 sm:px-5 py-4 overflow-y-auto overscroll-contain min-h-0">{children}</div>
+        {footer && <div className="px-4 sm:px-5 py-3 border-t border-line flex flex-col-reverse sm:flex-row sm:justify-end gap-2 safe-bottom [&_.btn]:w-full sm:[&_.btn]:w-auto">{footer}</div>}
       </div>
     </div>
   );

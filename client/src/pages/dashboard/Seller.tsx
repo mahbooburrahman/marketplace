@@ -81,7 +81,7 @@ function RequestForm({ plans, onDone }: { plans: Plan[]; onDone: () => void }) {
         <Field label="What will you sell?" required error={errors.message} hint="E.g. the kind of items, roughly how many, and whether they are new or used.">
           <Textarea rows={4} value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} maxLength={1500} invalid={!!errors.message} />
         </Field>
-        <div className="flex justify-end"><Button type="submit" loading={busy}><Store size={16} /> Request seller authorization</Button></div>
+        <div className="flex justify-end [&_.btn]:w-full sm:[&_.btn]:w-auto"><Button type="submit" loading={busy}><Store size={16} /> Request seller authorization</Button></div>
       </div>
     </form>
   );
@@ -190,7 +190,7 @@ function InfoResponse({ requestId, question, onDone }: { requestId: string; ques
     <div className="card p-5 space-y-3">
       <Notice tone="amber" icon={MessageSquareText} title="The administrator needs more information">{question}</Notice>
       <Textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Your reply…" maxLength={1500} aria-label="Your reply" />
-      <div className="flex justify-end"><Button loading={busy} disabled={text.trim().length < 2} onClick={send}>Send reply</Button></div>
+      <div className="flex justify-end [&_.btn]:w-full sm:[&_.btn]:w-auto"><Button loading={busy} disabled={text.trim().length < 2} onClick={send}>Send reply</Button></div>
     </div>
   );
 }
