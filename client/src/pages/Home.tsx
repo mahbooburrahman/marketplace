@@ -10,7 +10,7 @@ import { useCity, GTA_CITIES, citySlug } from '../lib/geo';
 import { useAuth } from '../context/AuthContext';
 import { ListingRail, ProductRow } from '../components/ListingCard';
 import { Avatar, EmptyState, ErrorState, GridSkeleton } from '../components/ui';
-import { HeroSlider, HotCard, CategoryCircles } from '../components/HeroSlider';
+import { HeroSlider, HotCard, CategoryCircles, type Banner } from '../components/HeroSlider';
 
 interface HomeData {
   featured: L[];
@@ -39,6 +39,11 @@ export default function Home() {
   usePageMeta('Buy & Sell in the GTA — Toronto, Mississauga, Brampton', 'Free local classifieds for the Greater Toronto Area: buy and sell electronics, furniture, household items and more in Toronto, Mississauga, Brampton, Markham and Vaughan.');
   const { data, error, loading, reload } = useFetch<HomeData>(`/api/listings/home${near ? `?near=${encodeURIComponent(near)}` : ''}`);
   const [recent, setRecent] = useState<L[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+
+  useEffect(() => {
+    api.get<{ items: Banner[] }>('/api/banners').then((r) => setBanners(r.items)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const ids = recentlyViewed.get();
@@ -56,7 +61,7 @@ export default function Home() {
 
         {/* Slider + hot item */}
         <section aria-label="Highlights" className="mt-4 sm:mt-6 grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 min-w-0"><HeroSlider listings={featuredSlides} sellTo={sellTo} /></div>
+          <div className="lg:col-span-2 min-w-0"><HeroSlider listings={featuredSlides} banners={banners} sellTo={sellTo} /></div>
           <HotCard item={hot} loading={loading} sellTo={sellTo} />
         </section>
 

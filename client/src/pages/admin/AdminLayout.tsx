@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Store, List, CreditCard, FolderTree, Flag, Settings, History, ArrowLeft, UserCheck, Clock, BadgeCheck, Wallet,
-  CheckCircle2, XCircle, MessageCircle, Ban, Megaphone, Layers,
+  CheckCircle2, XCircle, MessageCircle, Ban, Megaphone, Layers, GalleryHorizontal,
 } from 'lucide-react';
 import { useFetch, usePageMeta } from '../../lib/hooks';
 import { dateTime, money } from '../../lib/format';
@@ -23,6 +23,7 @@ export function AdminLayout() {
     { to: '/admin/payments', label: 'Payments', icon: CreditCard, badge: s?.pending_payments },
     { to: '/admin/plans', label: 'Seller plans', icon: Layers },
     { to: '/admin/categories', label: 'Categories', icon: FolderTree },
+    { to: '/admin/banners', label: 'Banner ads', icon: GalleryHorizontal },
     { to: '/admin/reports', label: 'Reports', icon: Flag, badge: s?.open_reports },
     { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
     { to: '/admin/settings', label: 'Settings', icon: Settings },

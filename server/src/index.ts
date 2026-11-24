@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './config.js';
 import { pool } from './db.js';
 import { errorHandler, notFound } from './lib/http.js';
-import { attachUser, csrf } from './middleware/auth.js';
+import { attachUser, csrf, requireAdmin } from './middleware/auth.js';
 import { apiLimiter } from './middleware/limits.js';
 import { attachSocket } from './socket.js';
 import { startJobs } from './jobs.js';
@@ -24,6 +24,7 @@ import chatRoutes from './routes/chat.js';
 import accountRoutes from './routes/account.js';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
+import { adminBanners, publicBanners } from './routes/banners.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(here, '../../client/dist');
@@ -72,6 +73,8 @@ export function createApp() {
   app.use('/api/seller', sellerRoutes);
   app.use('/api/chat', chatRoutes);
   app.use('/api/account', accountRoutes);
+  app.use('/api/admin/banners', requireAdmin, adminBanners);
+  app.use('/api/banners', publicBanners);
   app.use('/api/admin', adminRoutes);
   app.use('/api', publicRoutes);
 

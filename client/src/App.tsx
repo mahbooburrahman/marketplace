@@ -38,6 +38,7 @@ const Admin = {
   Plans: lazy(() => import('./pages/admin/AdminSellers').then((m) => ({ default: m.AdminPlans }))),
   Listings: lazy(() => import('./pages/admin/AdminListings')),
   Payments: lazy(() => import('./pages/admin/AdminPayments')),
+  Banners: lazy(() => import('./pages/admin/AdminBanners')),
   Categories: lazy(() => import('./pages/admin/AdminCategories')),
   Reports: lazy(() => import('./pages/admin/AdminReports')),
   Settings: lazy(() => import('./pages/admin/AdminSettings')),
@@ -99,6 +100,7 @@ export default function App() {
                         <Route path="plans" element={<Admin.Plans />} />
                         <Route path="listings" element={<Admin.Listings />} />
                         <Route path="payments" element={<Admin.Payments />} />
+                        <Route path="banners" element={<Admin.Banners />} />
                         <Route path="categories" element={<Admin.Categories />} />
                         <Route path="reports" element={<Admin.Reports />} />
                         <Route path="announcements" element={<Admin.Announcements />} />

@@ -3,11 +3,17 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight, Flame, ImageOff, MapPin, Sparkles } from 'lucide-react';
 import type { ListingCard as L, Category } from '../lib/types';
 import { money } from '../lib/format';
+import { api } from '../lib/api';
 import { CategoryIcon } from './ui';
 
 type PromoSlide = { kind: 'promo'; key: string; eyebrow: string; title: string; body: string; cta: string; to: string; art: string };
 type ListingSlide = { kind: 'listing'; key: string; l: L };
-type Slide = PromoSlide | ListingSlide;
+export type Banner = { id: string; title: string; cta: string; link_url: string; image_url: string | null };
+type BannerSlide = { kind: 'banner'; key: string; b: Banner };
+type Slide = PromoSlide | ListingSlide | BannerSlide;
+
+const seenBanners = new Set<string>();
+const track = (id: string, what: 'view' | 'click') => { api.post(`/api/banners/${id}/${what}`).catch(() => {}); };
 
 const FRAME = 'h-[300px] sm:h-[380px]';
 
@@ -21,6 +27,27 @@ function promoSlides(sellTo: string): PromoSlide[] {
 
 function SlideView({ s, active }: { s: Slide; active: boolean }) {
   const tab = active ? 0 : -1;
+  if (s.kind === 'banner') {
+    const b = s.b;
+    const external = /^https?:\/\//i.test(b.link_url);
+    const inner = (
+      <>
+        <img src={b.image_url ?? ''} alt={b.title || 'Advertisement'} className="absolute inset-0 size-full object-cover" />
+        <span className="absolute left-3 top-3 rounded-full bg-black/55 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5">Ad</span>
+        {(b.title || b.cta) && (
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between gap-3">
+            <p className="text-lg sm:text-2xl font-extrabold leading-tight line-clamp-2 min-w-0">{b.title}</p>
+            {b.cta && <span className="btn btn-accent shrink-0">{b.cta}</span>}
+          </div>
+        )}
+      </>
+    );
+    const cls = 'absolute inset-0 block';
+    if (!b.link_url) return <div className={cls}>{inner}</div>;
+    return external
+      ? <a href={b.link_url} target="_blank" rel="sponsored noopener noreferrer" tabIndex={tab} onClick={() => track(b.id, 'click')} className={cls}>{inner}</a>
+      : <Link to={b.link_url} tabIndex={tab} onClick={() => track(b.id, 'click')} className={cls}>{inner}</Link>;
+  }
   if (s.kind === 'listing') {
     const l = s.l;
     return (
@@ -52,13 +79,17 @@ function SlideView({ s, active }: { s: Slide; active: boolean }) {
 }
 
 /** Home page slider: featured ads first, then a few SaudaGo promo slides. */
-export function HeroSlider({ listings, sellTo }: { listings: L[]; sellTo: string }) {
-  const slides: Slide[] = [...listings.map((l): Slide => ({ kind: 'listing', key: l.id, l })), ...promoSlides(sellTo)];
+export function HeroSlider({ listings, banners = [], sellTo }: { listings: L[]; banners?: Banner[]; sellTo: string }) {
+  const slides: Slide[] = [...banners.map((b): Slide => ({ kind: 'banner', key: `b-${b.id}`, b })), ...listings.map((l): Slide => ({ kind: 'listing', key: l.id, l })), ...promoSlides(sellTo)];
   const n = slides.length;
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef<number | null>(null);
   const idx = i % n;
+  const cur = slides[idx];
+  useEffect(() => {
+    if (cur?.kind === 'banner' && !seenBanners.has(cur.b.id)) { seenBanners.add(cur.b.id); track(cur.b.id, 'view'); }
+  }, [cur]);
 
   useEffect(() => {
     const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
