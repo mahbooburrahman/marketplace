@@ -258,7 +258,7 @@ export function seoHtmlHandler(indexPath: string) {
         .replace('<html lang="en">', '<html lang="en-CA">')
         .replace(/<title>.*?<\/title>/s, '')
         .replace('<!--SEO_HEAD-->', tags)
-        .replace('<!--SEO_BODY-->', meta.body ?? ''); // inside #root: React replaces it on mount
+        .replace('<!--SEO_BODY-->', `<div class="seo-splash" aria-hidden="true"><div class="seo-spin"></div><p>SaudaGo</p></div><div class="seo-snapshot">${meta.body ?? ''}</div>`); // inside #root: React replaces it on mount
       res.status(meta.status ?? 200).set('Content-Type', 'text/html; charset=utf-8').set('Cache-Control', 'no-cache').send(html);
     } catch (e) {
       next(e);
