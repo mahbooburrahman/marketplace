@@ -9,7 +9,7 @@ import { imageUpload, processImage, publicUrl, removeFile } from '../lib/storage
 import { contentHash, CONDITIONS, MODERATED_FIELDS } from '../lib/listings.js';
 import { slugify } from '../lib/security.js';
 import { getSettings } from '../lib/settings.js';
-import { notifyAdmins } from '../lib/notify.js';
+import { notify, notifyAdmins } from '../lib/notify.js';
 import { audit } from '../lib/audit.js';
 
 const r = Router();
@@ -343,6 +343,17 @@ r.post(
       [id],
     );
     await audit(req, 'listing.available_again', { type: 'listing', id });
+    const watchers = await q<{ user_id: string }>(`DELETE FROM listing_watchers WHERE listing_id=$1 RETURNING user_id`, [id]);
+    const info = await one<{ title: string; slug: string }>(`SELECT title, slug FROM listings WHERE id=$1`, [id]);
+    if (info) {
+      for (const w of watchers) {
+        notify({
+          userId: w.user_id, type: 'listing_available', title: 'Good news — it\'s available again',
+          body: `"${info.title}" is back on SaudaGo.`, link: `/item/${info.slug}`,
+          email: { subject: `Available again: ${info.title}`, cta: 'View item' },
+        }).catch(() => {});
+      }
+    }
     res.json({ status: 'published' });
   }),
 );

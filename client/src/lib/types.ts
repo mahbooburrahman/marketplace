@@ -56,6 +56,7 @@ export interface ListingDetail extends ListingCard {
     member_since: string;
   };
   is_owner: boolean;
+  is_watching?: boolean;
 }
 
 export interface Category {

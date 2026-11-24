@@ -4,6 +4,8 @@ import { one, q } from '../db.js';
 import { ah, notFound, pageParams, parse } from '../lib/http.js';
 import { CARD_FROM, CARD_SELECT, PUBLIC_WHERE, toCard, likeEscape, CONDITIONS } from '../lib/listings.js';
 import { publicUrl } from '../lib/storage.js';
+import { requireAuth } from '../middleware/auth.js';
+import { writeLimiter } from '../middleware/limits.js';
 
 const r = Router();
 
@@ -210,6 +212,9 @@ export async function loadListingDetail(idOrSlug: string, viewer?: Express.Reque
   // Sold listings stay viewable (marked sold) so shared links don't break.
   if (!isPublic && !isOwner && !isAdmin && row.status !== 'sold') return null;
 
+  const watching = viewer && row.status === 'sold' && !isOwner
+    ? !!(await one('SELECT 1 FROM listing_watchers WHERE listing_id=$1 AND user_id=$2', [row.id, viewer.id]))
+    : false;
   const images = await q<any>('SELECT id, path, thumb_path, width, height FROM listing_images WHERE listing_id=$1 ORDER BY sort_order, created_at', [row.id]);
   return {
     ...toCard(row),
@@ -234,8 +239,33 @@ export async function loadListingDetail(idOrSlug: string, viewer?: Express.Reque
       member_since: row.seller_since,
     },
     is_owner: isOwner,
+    is_watching: watching,
   };
 }
+
+/** POST /api/listings/:id/notify-me — tell me when this sold item is available again */
+r.post(
+  '/:id/notify-me',
+  requireAuth,
+  writeLimiter,
+  ah(async (req, res) => {
+    const l = await one<any>(`SELECT id, status, seller_id FROM listings WHERE id=$1 AND deleted_at IS NULL`, [req.params.id]);
+    if (!l) throw notFound('This listing is not available.');
+    if (l.seller_id !== req.user!.id && l.status === 'sold') {
+      await q(`INSERT INTO listing_watchers (listing_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [l.id, req.user!.id]);
+    }
+    res.json({ watching: true });
+  }),
+);
+
+r.delete(
+  '/:id/notify-me',
+  requireAuth,
+  ah(async (req, res) => {
+    await q(`DELETE FROM listing_watchers WHERE listing_id=$1 AND user_id=$2`, [req.params.id, req.user!.id]);
+    res.json({ watching: false });
+  }),
+);
 
 r.get(
   '/:idOrSlug',

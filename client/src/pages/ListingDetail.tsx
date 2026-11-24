@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Clock, Tag, BadgeCheck, MessageCircle, Flag, Share2, Phone, Eye, ShieldCheck, Lock, ArrowLeft, ChevronRight, Pencil, CheckCircle2, RotateCcw } from 'lucide-react';
+import { MapPin, Clock, Tag, BadgeCheck, MessageCircle, Flag, Share2, Phone, Eye, ShieldCheck, Lock, ArrowLeft, ChevronRight, Pencil, CheckCircle2, RotateCcw, Bell, BellOff } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFetch, usePageMeta } from '../lib/hooks';
 import { CONDITIONS, dateShort, money, recentlyViewed, timeAgo } from '../lib/format';
@@ -47,11 +47,34 @@ function OwnerActions({ l, onChanged }: { l: D; onChanged: () => void }) {
   );
 }
 
+function NotifyMe({ l }: { l: D }) {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [on, setOn] = useState(!!l.is_watching);
+  const [busy, setBusy] = useState(false);
+  if (!user) {
+    return <Link to={`/login?next=/item/${l.slug}`} className="btn btn-outline w-full"><Bell size={16} /> Log in to get notified</Link>;
+  }
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      if (on) await api.del(`/api/listings/${l.id}/notify-me`); else await api.post(`/api/listings/${l.id}/notify-me`);
+      setOn(!on);
+      toast(on ? 'Notification turned off' : 'We’ll notify you if it becomes available again', 'success');
+    } catch (e) { toast(errMsg(e), 'error'); } finally { setBusy(false); }
+  };
+  return (
+    <Button variant={on ? 'outline' : 'primary'} className="w-full" loading={busy} onClick={toggle}>
+      {on ? <><BellOff size={16} /> Stop notifying me</> : <><Bell size={16} /> Notify me if available again</>}
+    </Button>
+  );
+}
+
 function ContactBox({ l, onChanged }: { l: D; onChanged: () => void }) {
   const { user } = useAuth();
   const nav = useNavigate();
   const toast = useToast();
-  const [msg, setMsg] = useState(`Hi, is "${l.title}" still available?`);
+  const [msg, setMsg] = useState('Hi, is this available?');
   const [busy, setBusy] = useState(false);
 
   if (l.is_owner) {
@@ -202,8 +225,9 @@ export default function ListingDetail() {
               <div className="text-center space-y-3 py-1">
                 <span className="mx-auto size-12 rounded-full bg-stone-100 text-ink grid place-items-center"><CheckCircle2 size={26} /></span>
                 <p className="font-extrabold text-lg">This item has been sold</p>
-                <p className="text-sm text-muted">The seller has already sold this item, so messaging is closed.</p>
-                <Link to={`/category/${l.category.slug}`} className="btn btn-primary w-full">See similar {l.category.name.toLowerCase()}</Link>
+                <p className="text-sm text-muted">Messaging is closed, but we can tell you if it comes back.</p>
+                <NotifyMe l={l} />
+                <Link to={`/category/${l.category.slug}`} className="btn btn-outline w-full">See similar {l.category.name.toLowerCase()}</Link>
               </div>
             ) : (
               <ContactBox l={l} onChanged={reload} />
